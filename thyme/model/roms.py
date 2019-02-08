@@ -1,5 +1,5 @@
 """
-Utility classes and methods for working with ROMS ocean model forecast guidance.
+Utility classes and methods for working with NOAA/NOS ROMS ocean model forecast guidance.
 
 The Regional Ocean Modeling System (ROMS) is a 3D hydrodynamic modeling
 framework which uses an irregular, curvilinear horizontal grid and a sigma
@@ -11,11 +11,10 @@ lat/lon horizontal grid at a given depth-below-surface.
 import numpy
 import numpy.ma as ma
 import netCDF4
-import osr
 import ogr
 from scipy import interpolate
 
-from s100py.model import model
+from thyme.thyme.model import model
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
@@ -45,23 +44,15 @@ class ROMSIndexFile(model.ModelIndexFile):
             reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
         """
-        # Create shapefile with OGR
-        driver = ogr.GetDriverByName('Esri Shapefile')
-        dset = driver.CreateDataSource('grid_cell_mask.shp')
+        # Create OGR layer in memory
+        driver = ogr.GetDriverByName('Memory')
+        dset = driver.CreateDataSource('grid_cell_mask')
         dset_srs = ogr.osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
         layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
 
-        # Add spatial reference to polygon
-        spatial_ref = osr.SpatialReference()
-        spatial_ref.ImportFromEPSG(4326)
-        spatial_ref.MorphToESRI()
-        mask_file = open('grid_cell_mask.prj', 'w')
-        mask_file.write(spatial_ref.ExportToWkt())
-        mask_file.close()
-
-        # Create shapefile containing polygons for each irregular grid cell
+        # Create polygons for each irregular grid cell
         # searching counter clockwise(eta1, xi), (eta2, xi2), (eta3, xi3),(eta4, xi4)
         for xi1 in range(model_file.num_xi - 1):
             for eta1 in range(model_file.num_eta - 1):

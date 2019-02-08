@@ -1,5 +1,5 @@
 """
-Utility classes and methods for working with POM ocean model forecast guidance.
+Utility classes and methods for working with NOAA/NOS POM ocean model forecast guidance.
 
 The Princeton Ocean Modeling System (POM) is a three-dimensional, primitive
 equation, free surface ocean,  numerical ocean model with curvilinear orthogonal
@@ -11,11 +11,10 @@ import numpy
 import numpy.ma as ma
 import datetime
 import netCDF4
-import osr
 import ogr
 from scipy import interpolate
 
-from s100py.model import model
+from thyme.thyme.model import model
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
@@ -42,21 +41,13 @@ class POMIndexFile(model.ModelIndexFile):
             reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
         """
-        # Create shapefile with OGR
-        driver = ogr.GetDriverByName('Esri Shapefile')
-        dset = driver.CreateDataSource('grid_cell_mask.shp')
+        # Create OGR layer in memory
+        driver = ogr.GetDriverByName('Memory')
+        dset = driver.CreateDataSource('grid_cell_mask')
         dset_srs = ogr.osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
         layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
-
-        # Add spatial reference to polygon
-        spatial_ref = osr.SpatialReference()
-        spatial_ref.ImportFromEPSG(4326)
-        spatial_ref.MorphToESRI()
-        mask_file = open('grid_cell_mask.prj', 'w')
-        mask_file.write(spatial_ref.ExportToWkt())
-        mask_file.close()
 
         # Determine each irregular grid points surrounding points
         # searching counter clockwise from (ny1, nx1) to (ny9,nx9)
@@ -123,7 +114,7 @@ class POMIndexFile(model.ModelIndexFile):
                         pt_wkt = point.ExportToWkt()
                         pt = ogr.CreateGeometryFromWkt(pt_wkt)
 
-                        # Add buffer polygons to shapefile
+                        # Add buffer polygons to the layer
                         buffer = pt.Buffer(buffer_distance)
                         buffer_feature = ogr.Feature(layer.GetLayerDefn())
                         buffer_feature.SetField('id', 1)
@@ -143,7 +134,7 @@ class POMIndexFile(model.ModelIndexFile):
                 geom = ogr.Geometry(ogr.wkbPolygon)
                 geom.AddGeometry(ring)
 
-                # Buffer irregular grid cell polygons and add output to shapefile
+                # Buffer irregular grid cell polygons and add to layer
                 grid_feature = ogr.Feature(layer.GetLayerDefn())
                 grid_buffer = geom.Buffer(buffer_distance)
                 grid_feature.SetGeometry(grid_buffer)
