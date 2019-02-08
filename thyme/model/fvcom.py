@@ -1,5 +1,5 @@
 """
-Utility classes and methods for working with FVCOM ocean model forecast guidance.
+Utility classes and methods for working with NOAA/NOS FVCOM ocean model forecast guidance.
 
 The Finite-Volume, primitive equation Community Ocean Modeling System (FVCOM)
 is a unstructured-grid, finite-volume, free-surface, 3D primitive equation
@@ -12,11 +12,10 @@ a regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
 import numpy
 import datetime
 import netCDF4
-import osr
 import ogr
 from scipy import interpolate
 
-from s100py.model import model
+from thyme.thyme.model import model
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
@@ -101,23 +100,15 @@ class FVCOMIndexFile(model.ModelIndexFile):
             reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
         """
-        # Create shapefile with OGR
-        driver = ogr.GetDriverByName('Esri Shapefile')
-        dset = driver.CreateDataSource('grid_cell_mask.shp')
+        # Create OGR layer in memory
+        driver = ogr.GetDriverByName('Memory')
+        dset = driver.CreateDataSource('grid_cell_mask')
         dset_srs = ogr.osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
         layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
 
-        # Add spatial reference to polygon
-        spatial_ref = osr.SpatialReference()
-        spatial_ref.ImportFromEPSG(4326)
-        spatial_ref.MorphToESRI()
-        mask_file = open('grid_cell_mask.prj', 'w')
-        mask_file.write(spatial_ref.ExportToWkt())
-        mask_file.close()
-
-        # Create shapefile containing polygons for each unstructured
+        # Create polygons for each unstructured
         # triangle using three valid nodes surrounding each centroid
         for node in range(0, model_file.var_nv.shape[1]):
             p1 = model_file.var_nv[0][node] - 1
