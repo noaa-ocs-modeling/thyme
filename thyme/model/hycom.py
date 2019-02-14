@@ -1,10 +1,17 @@
 """
-Utility classes and methods for working with NCEP Global HYCOM ocean model forecast guidance.
+Utility classes and methods for working with HYCOM output.
 
-The Hybrid Coordinate Ocean Model (HYCOM) is a three-dimensional, primitive
-equation, free surface ocean,  numerical ocean model with curvilinear orthogonal
-and sigma (terrain-following)coordinates.
+The Hybrid Coordinate Ocean Model (HYCOM) is "a data-assimilative hybrid
+isopycnal-sigma-pressure (generalized) coordinate ocean model." See
+https://www.hycom.org for more information.
 
+This module provides functionality allowing HYCOM output to be interpolated to
+a regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
+
+Currently, this module has only been tested to work with the HYCOM-based
+Global Real-Time Ocean Forecast System (G-RTOFS) produced by NOAA's National
+Centers for Environmental Prediction (NCEP), and would likely require
+modifications to support other HYCOM-based model output.
 """
 import datetime
 
@@ -20,14 +27,33 @@ from thyme.model import model
 FILLVALUE = -9999.0
 
 # Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = "scipy"
+INTERP_METHOD_SCIPY = 'scipy'
 
 # Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = "gdal"
+INTERP_METHOD_GDAL = 'gdal'
 
 
 class HYCOMIndexFile(model.ModelIndexFile):
-    """Store a regular grid mask based on HYCOM model grid properties in a NetCDF file."""
+    """NetCDF file containing metadata/grid info used during HYCOM processing.
+
+    Store a regular grid definition, mask, and other information needed to
+    process/convert native output from an HYCOM-based hydrodynamic model,
+    within a reusable NetCDF file.
+
+    Support is included for defining a set of regular, orthogonal subgrids that
+    allow the data to be subset into multiple sub-domains during processing.
+    This is accomplished by specifying a polygon shapefile containing one or
+    more rectangular, orthogonal polygons defining areas where output data will
+    be cropped and written to distinct output files.
+
+    A unique model index file must be created for each combination of model,
+    output grid resolution, land mask, and subset grid definition, and must be
+    regenerated if anything changes (i.e., when a model domain extent is
+    modified or the target output grid is redefined, a new model index file
+    must be created before processing can resume). Until any of these
+    properties change, the index file may be kept on the data processing system
+    and reused in perpetuity.
+    """
 
     def __init__(self, path):
         super().__init__(path)
@@ -235,9 +261,9 @@ def vertical_interpolation(u, v, depth, num_x, num_y, time_index, target_depth):
             depth must be greater or equal to 0.
     """
     if target_depth < 0:
-        raise Exception("Target depth must be positive")
+        raise Exception('Target depth must be positive')
     if target_depth > numpy.nanmax(depth):
-        raise Exception("Target depth exceeds total depth")
+        raise Exception('Target depth exceeds total depth')
 
     u_target_depth = numpy.ma.empty(shape=[num_y, num_x])
     v_target_depth = numpy.ma.empty(shape=[num_y, num_x])

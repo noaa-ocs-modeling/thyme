@@ -1,10 +1,18 @@
 """
-Utility classes and methods for working with NOAA/NOS POM ocean model forecast guidance.
+Utility classes and methods for working with POM output.
 
-The Princeton Ocean Modeling System (POM) is a three-dimensional, primitive
-equation, free surface ocean,  numerical ocean model with curvilinear orthogonal
-and sigma (terrain-following)coordinates.
+The Princeton Ocean Modeling System (POM) is "a sigma coordinate (terrain-
+following), free surface ocean model with embedded turbulence and wave
+sub-models, and wet-dry capability." See http://www.ccpo.odu.edu/POMWEB/ for
+more information.
 
+This module provides functionality allowing POM output to be interpolated to a
+regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
+
+Currently, this module has only been tested to work with POM-based National
+Ocean Service (NOS) Operational Forecast Systems (OFS), e.g. NYOFS, LOOFS, and
+LSOFS, and would likely require modifications to support other POM-based model
+output.
 """
 import datetime
 
@@ -20,14 +28,33 @@ from thyme.model import model
 FILLVALUE = -9999.0
 
 # Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = "scipy"
+INTERP_METHOD_SCIPY = 'scipy'
 
 # Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = "gdal"
+INTERP_METHOD_GDAL = 'gdal'
 
 
 class POMIndexFile(model.ModelIndexFile):
-    """Store a regular grid mask based on POM model grid properties in a NetCDF file."""
+    """NetCDF file containing metadata/grid info used during POM processing.
+
+    Store a regular grid definition, mask, and other information needed to
+    process/convert native output from an POM-based hydrodynamic model, within
+    a reusable NetCDF file.
+
+    Support is included for defining a set of regular, orthogonal subgrids that
+    allow the data to be subset into multiple sub-domains during processing.
+    This is accomplished by specifying a polygon shapefile containing one or
+    more rectangular, orthogonal polygons defining areas where output data will
+    be cropped and written to distinct output files.
+
+    A unique model index file must be created for each combination of model,
+    output grid resolution, land mask, and subset grid definition, and must be
+    regenerated if anything changes (i.e., when a model domain extent is
+    modified or the target output grid is redefined, a new model index file
+    must be created before processing can resume). Until any of these
+    properties change, the index file may be kept on the data processing system
+    and reused in perpetuity.
+    """
 
     def __init__(self, path):
         super().__init__(path)
@@ -304,9 +331,9 @@ def vertical_interpolation(u, v, mask, zeta, depth, sigma, num_sigma, num_ny, nu
         sigma_depth_layers[k, :] = sigma[k] * true_depth
 
     if target_depth < 0:
-        raise Exception("Target depth must be positive")
+        raise Exception('Target depth must be positive')
     if target_depth > numpy.nanmax(true_depth):
-        raise Exception("Target depth exceeds total depth")
+        raise Exception('Target depth exceeds total depth')
 
     # For areas shallower than the target depth, depth is half the total depth
     interp_depth = zeta[time_index, :] - numpy.minimum(target_depth * 2, true_depth) / 2

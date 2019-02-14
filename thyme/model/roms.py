@@ -1,11 +1,19 @@
 """
-Utility classes and methods for working with NOAA/NOS ROMS ocean model forecast guidance.
+Utility classes and methods for working with ROMS output.
 
-The Regional Ocean Modeling System (ROMS) is a 3D hydrodynamic modeling
-framework which uses an irregular, curvilinear horizontal grid and a sigma
-(bathymetry-following) vertical coordinate system. This module provides
-functionality allowing ROMS output to be interpolated to a regular, orthogonal
-lat/lon horizontal grid at a given depth-below-surface.
+The Regional Ocean Modeling System (ROMS) is "a free-surface, terrain-
+following, primitive equations ocean model widely used by the scientific
+community for a diverse range of applications." ROMS uses an irregular,
+curvilinear horizontal grid and a sigma (terrain-following) vertical coordinate
+system. See https://www.myroms.org for more information.
+
+This module provides functionality allowing ROMS output to be interpolated to a
+regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
+
+Currently, this module has only been tested to work with ROMS-based National
+Ocean Service (NOS) Operational Forecast Systems (OFS), e.g. CBOFS, DBOFS,
+TBOFS, and GoMOFS, and would likely require modifications to support other
+ROMS-based model output.
 """
 import netCDF4
 import numpy
@@ -19,14 +27,33 @@ from thyme.model import model
 FILLVALUE = -9999.0
 
 # Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = "scipy"
+INTERP_METHOD_SCIPY = 'scipy'
 
 # Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = "gdal"
+INTERP_METHOD_GDAL = 'gdal'
 
 
 class ROMSIndexFile(model.ModelIndexFile):
-    """Store a regular grid mask based on ROMS model grid properties in a NetCDF file."""
+    """NetCDF file containing metadata/grid info used during ROMS processing.
+
+    Store a regular grid definition, mask, and other information needed to
+    process/convert native output from an ROMS-based hydrodynamic model, within
+    a reusable NetCDF file.
+
+    Support is included for defining a set of regular, orthogonal subgrids that
+    allow the data to be subset into multiple sub-domains during processing.
+    This is accomplished by specifying a polygon shapefile containing one or
+    more rectangular, orthogonal polygons defining areas where output data will
+    be cropped and written to distinct output files.
+
+    A unique model index file must be created for each combination of model,
+    output grid resolution, land mask, and subset grid definition, and must be
+    regenerated if anything changes (i.e., when a model domain extent is
+    modified or the target output grid is redefined, a new model index file
+    must be created before processing can resume). Until any of these
+    properties change, the index file may be kept on the data processing system
+    and reused in perpetuity.
+    """
     def __init__(self, path):
         super().__init__(path)
 
@@ -34,13 +61,14 @@ class ROMSIndexFile(model.ModelIndexFile):
         """Create model domain mask and write to index file.
 
         For every irregular grid point create a polygon from four valid
-        grid points, searching counter clockwise (eta1,xi1), (eta2,xi2), (eta3,xi3),
-        (eta4,xi4). Rasterize the polygon to create a grid domain mask.
+        grid points, searching counter clockwise (eta1,xi1), (eta2,xi2),
+        (eta3,xi3), (eta4,xi4). Rasterize the polygon to create a grid domain
+        mask.
 
         Args:
-            model_file: `ROMSOutputFile` instance containing irregular grid
+            model_file: ``ROMSOutputFile`` instance containing irregular grid
                 structure and variables.
-            reg_grid: `RegularGrid` instance describing the regular grid for
+            reg_grid: ``RegularGrid`` instance describing the regular grid for
                 which the mask will be created.
         """
         # Create OGR layer in memory
@@ -97,7 +125,6 @@ class ROMSFile(model.ModelFile):
 
         Args:
             path: Path of target NetCDF file.
-
         """
         super().__init__(path)
         self.var_ang_rho = None
@@ -233,10 +260,18 @@ def compress_variables(rot_u_rho, rot_v_rho, water_lat_rho, water_lon_rho):
     """Compress masked variables for interpolation.
 
     Args:
-        rot_u_rho: `numpy.ma.masked_array` containing u values rotated and averaged to rho.
-        rot_v_rho: `numpy.ma.masked_array` containing v values rotated and averaged to rho.
-        water_lat_rho: `numpy.ma.masked_array` containing latitude values of rho points.
-        water_lon_rho: `numpy.ma.masked_array` containing longitude values of rho points.
+        rot_u_rho: ``numpy.ma.masked_array`` containing u values rotated and
+            averaged to rho.
+        rot_v_rho: ``numpy.ma.masked_array`` containing v values rotated and
+            averaged to rho.
+        water_lat_rho: ``numpy.ma.masked_array`` containing latitude values of
+            rho points.
+        water_lon_rho: ``numpy.ma.masked_array`` containing longitude values of
+            rho points.
+    
+    Returns:
+        A 4-tuple containing u, v, lat, and lon value compressed (i.e., with
+        masked data values removed) arrays (in that order).
     """
     u_compressed = numpy.ma.compressed(rot_u_rho)
     v_compressed = numpy.ma.compressed(rot_v_rho)
@@ -250,10 +285,13 @@ def rotate_uv2d(u_rho, v_rho, water_ang_rho):
     """Rotate vectors by geometric angle.
 
     Args:
-        u_rho: `numpy.ma.masked_array` containing u values averaged to rho.
-        v_rho: `numpy.ma.masked_array` containing v values averaged to rho.
-        water_ang_rho: `numpy.ma.masked_array` containing angle-of-rotation
+        u_rho: ``numpy.ma.masked_array`` containing u values averaged to rho.
+        v_rho: ``numpy.ma.masked_array`` containing v values averaged to rho.
+        water_ang_rho: ``numpy.ma.masked_array`` containing angle-of-rotation
             values for rho points.
+
+    Returns:
+        A 2-tuple containing rotated u and v arrays (in that order).
     """
     ang_sin = numpy.sin(water_ang_rho)
     ang_cos = numpy.cos(water_ang_rho)
@@ -281,7 +319,7 @@ def average_uv2rho(water_u, water_v):
             NoData/Land-masked point values set to zero.
     
     Returns:
-        A 2-tuple of 2D `numpy.ndarray`s containing u and v values
+        A 2-tuple of 2D ``numpy.ndarray``s containing u and v values
         (respectively) averaged to rho points.
     """
     num_eta = water_u.shape[0]
@@ -310,17 +348,17 @@ def mask_land(u_target_depth, v_target_depth, ang_rho, lat_rho, lon_rho, mask_u,
     """Create masked arrays for specified variables to mask land values.
 
     Args:
-        u_target_depth: `numpy.ndarray` containing u values for entire grid at
-            specified depth.
-        v_target_depth: `numpy.ndarray` containing v values for entire grid at
-            specified depth.
-        ang_rho: `numpy.ndarray` containing angle-of-rotation values at
+        u_target_depth: ``numpy.ndarray`` containing u values for entire grid
+            at specified depth.
+        v_target_depth: ``numpy.ndarray`` containing v values for entire grid
+            at specified depth.
+        ang_rho: ``numpy.ndarray`` containing angle-of-rotation values at
             rho points.
-        lat_rho: `numpy.ndarray` containing latitude values of rho points.
-        lon_rho: `numpy.ndarray` containing longitude values of rho points.
-        mask_u: `numpy.ndarray` containing mask values for u points.
-        mask_v: `numpy.ndarray` containing mask values for v points.
-        mask_rho: `numpy.ndarray` containing mask values for rho points.
+        lat_rho: ``numpy.ndarray`` containing latitude values of rho points.
+        lon_rho: ``numpy.ndarray`` containing longitude values of rho points.
+        mask_u: ``numpy.ndarray`` containing mask values for u points.
+        mask_v: ``numpy.ndarray`` containing mask values for v points.
+        mask_rho: ``numpy.ndarray`` containing mask values for rho points.
     """
     water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(mask_u))
     water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(mask_v))
@@ -339,24 +377,32 @@ def vertical_interpolation(u, v, s_rho, mask_rho, mask_u, mask_v, zeta, h, hc, c
     """Vertically interpolate variables to target depth.
 
     Args:
-        u: `numpy.ndarray` containing u values for entire grid.
-        v: `numpy.ndarray` containing v values for entire grid.
-        s_rho: `numpy.ndarray` s-coordinate at rho points, -1 min 0 max, positive up.
-        zeta: `numpy.ndarray` containing MSL free surface at rho points in meters.
-        h: `numpy.ndarray` containing bathymetry at rho points.
-        hc: `numpy.ndarray` containing s-coordinate parameter, critical depth".
-        cs_r: `numpy.ndarray` containing s-coordinate stretching curves at rho points.
-        mask_u: `numpy.ndarray` containing mask values for u points.
-        mask_v: `numpy.ndarray` containing mask values for v points.
-        mask_rho: `numpy.ndarray` containing mask values for rho points.
+        u: ``numpy.ndarray`` containing u values for entire grid.
+        v: ``numpy.ndarray`` containing v values for entire grid.
+        s_rho: ``numpy.ndarray`` s-coordinate at rho points, -1 min 0 max,
+            positive up.
+        zeta: ``numpy.ndarray`` containing MSL free surface at rho points in
+            meters.
+        h: ``numpy.ndarray`` containing bathymetry at rho points.
+        hc: ``numpy.ndarray`` containing s-coordinate parameter, critical
+            depth.
+        cs_r: ``numpy.ndarray`` containing s-coordinate stretching curves at
+            rho points.
+        mask_u: ``numpy.ndarray`` containing mask values for u points.
+        mask_v: ``numpy.ndarray`` containing mask values for v points.
+        mask_rho: ``numpy.ndarray`` containing mask values for rho points.
         vtransform: Vertical terrain-following transformation equation.
         num_eta: eta dimensions.
         num_xi: xi dimensions.
         num_sigma: Number of sigma layers.
         time_index: Single forecast time index value.
-        target_depth: The water current at a specified target depth below the sea
-            surface in meters, default target depth is 4.5 meters, target interpolation
-            depth must be greater or equal to 0.
+        target_depth: The water current at a specified target depth below the
+            sea surface in meters, default target depth is 4.5 meters, target
+            interpolation depth must be greater or equal to 0.
+
+    Returns:
+        A 2-tuple containing u and v (in that order) value arrays calculated at
+        target depth.
     """
     zeta = numpy.ma.masked_array(zeta[time_index, :, :], numpy.logical_not(mask_rho))
     true_depth = h + zeta
@@ -374,9 +420,9 @@ def vertical_interpolation(u, v, s_rho, mask_rho, mask_u, mask_v, zeta, h, hc, c
             z[k, :, :] = zeta + ([zeta + h]*s)
 
     if target_depth < 0:
-        raise Exception("Target depth must be positive")
+        raise Exception('Target depth must be positive')
     if target_depth > numpy.nanmax(true_depth):
-        raise Exception("Target depth exceeds total depth")
+        raise Exception('Target depth exceeds total depth')
 
     # For areas shallower than the target depth, depth is half the total depth
     interp_depth = zeta - numpy.minimum(target_depth*2, true_depth)/2
