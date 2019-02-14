@@ -6,7 +6,7 @@ import os
 HERE = pathlib.Path(__file__).parent
 
 # Get the long description from the README file
-with open(os.path.join(HERE, 'README.rst'), encoding='utf-8') as f:
+with open(os.path.join(HERE, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 setuptools.setup(
@@ -19,10 +19,10 @@ setuptools.setup(
     long_description=long_description,
     url="",
     packages=setuptools.find_packages(),
-    install_requires=['gdal', 'netCDF4', 'numpy', 'scipy', 'shapely'],
+    install_requires=["gdal", "netCDF4", "numpy", "scipy", "shapely"],
     classifiers=[
         "Programming Language :: Python :: 3",
-        'Intended Audience :: Science/Research',
+        "Intended Audience :: Science/Research",
         "License :: OSI Approved",
         "Operating System :: OS Independent",
     ],
