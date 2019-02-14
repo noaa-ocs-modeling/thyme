@@ -6,12 +6,12 @@ equation, free surface ocean,  numerical ocean model with curvilinear orthogonal
 and sigma (terrain-following)coordinates.
 
 """
+import datetime
 
+import netCDF4
 import numpy
 import numpy.ma as ma
-import datetime
-import netCDF4
-import ogr
+from osgeo import ogr
 from scipy import interpolate
 
 from thyme.model import model

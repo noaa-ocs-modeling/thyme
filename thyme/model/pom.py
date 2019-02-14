@@ -6,12 +6,12 @@ equation, free surface ocean,  numerical ocean model with curvilinear orthogonal
 and sigma (terrain-following)coordinates.
 
 """
-
-import numpy
-import numpy.ma as ma
 import datetime
+
 import netCDF4
-import ogr
+import numpy
+import numpy.ma
+from osgeo import ogr
 from scipy import interpolate
 
 from thyme.model import model
@@ -196,8 +196,8 @@ class POMFile(model.ModelFile):
 
     def get_valid_extent(self):
         """Masked model domain extent."""
-        water_lat_rho = ma.masked_array(self.var_lat, numpy.logical_not(self.var_mask))
-        water_lon_rho = ma.masked_array(self.var_lon, numpy.logical_not(self.var_mask))
+        water_lat_rho = numpy.ma.masked_array(self.var_lat, numpy.logical_not(self.var_mask))
+        water_lon_rho = numpy.ma.masked_array(self.var_lon, numpy.logical_not(self.var_mask))
         lon_min = numpy.nanmin(water_lon_rho)
         lon_max = numpy.nanmax(water_lon_rho)
         lat_min = numpy.nanmin(water_lat_rho)
@@ -265,15 +265,15 @@ def compress_variables(u_target_depth, v_target_depth, lat, lon, mask):
         lon: `numpy.ma.masked_array` containing longitude values.
         mask: `numpy.ma.masked_array` containing mask values.
     """
-    water_lat_rho = ma.masked_array(lat, numpy.logical_not(mask))
-    water_lon_rho = ma.masked_array(lon, numpy.logical_not(mask))
-    water_u = ma.masked_array(u_target_depth, numpy.logical_not(mask))
-    water_v = ma.masked_array(v_target_depth, numpy.logical_not(mask))
+    water_lat_rho = numpy.ma.masked_array(lat, numpy.logical_not(mask))
+    water_lon_rho = numpy.ma.masked_array(lon, numpy.logical_not(mask))
+    water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(mask))
+    water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(mask))
 
-    u_compressed = ma.compressed(water_u)
-    v_compressed = ma.compressed(water_v)
-    lat_compressed = ma.compressed(water_lat_rho)
-    lon_compressed = ma.compressed(water_lon_rho)
+    u_compressed = numpy.ma.compressed(water_u)
+    v_compressed = numpy.ma.compressed(water_v)
+    lat_compressed = numpy.ma.compressed(water_lat_rho)
+    lon_compressed = numpy.ma.compressed(water_lon_rho)
 
     return u_compressed, v_compressed, lat_compressed, lon_compressed
 

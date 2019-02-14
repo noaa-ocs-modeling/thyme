@@ -7,11 +7,10 @@ framework which uses an irregular, curvilinear horizontal grid and a sigma
 functionality allowing ROMS output to be interpolated to a regular, orthogonal
 lat/lon horizontal grid at a given depth-below-surface.
 """
-
-import numpy
-import numpy.ma as ma
 import netCDF4
-import ogr
+import numpy
+import numpy.ma
+from osgeo import ogr
 from scipy import interpolate
 
 from thyme.model import model
@@ -150,8 +149,8 @@ class ROMSFile(model.ModelFile):
 
     def get_valid_extent(self):
         """Masked model domain extent."""
-        water_lat_rho = ma.masked_array(self.var_lat_rho, numpy.logical_not(self.var_mask_rho))
-        water_lon_rho = ma.masked_array(self.var_lon_rho, numpy.logical_not(self.var_mask_rho))
+        water_lat_rho = numpy.ma.masked_array(self.var_lat_rho, numpy.logical_not(self.var_mask_rho))
+        water_lon_rho = numpy.ma.masked_array(self.var_lon_rho, numpy.logical_not(self.var_mask_rho))
         lon_min = numpy.nanmin(water_lon_rho)
         lon_max = numpy.nanmax(water_lon_rho)
         lat_min = numpy.nanmin(water_lat_rho)
@@ -239,10 +238,10 @@ def compress_variables(rot_u_rho, rot_v_rho, water_lat_rho, water_lon_rho):
         water_lat_rho: `numpy.ma.masked_array` containing latitude values of rho points.
         water_lon_rho: `numpy.ma.masked_array` containing longitude values of rho points.
     """
-    u_compressed = ma.compressed(rot_u_rho)
-    v_compressed = ma.compressed(rot_v_rho)
-    lat_compressed = ma.compressed(water_lat_rho)
-    lon_compressed = ma.compressed(water_lon_rho)
+    u_compressed = numpy.ma.compressed(rot_u_rho)
+    v_compressed = numpy.ma.compressed(rot_v_rho)
+    lat_compressed = numpy.ma.compressed(water_lat_rho)
+    lon_compressed = numpy.ma.compressed(water_lon_rho)
 
     return u_compressed, v_compressed, lat_compressed, lon_compressed
 
@@ -323,15 +322,15 @@ def mask_land(u_target_depth, v_target_depth, ang_rho, lat_rho, lon_rho, mask_u,
         mask_v: `numpy.ndarray` containing mask values for v points.
         mask_rho: `numpy.ndarray` containing mask values for rho points.
     """
-    water_u = ma.masked_array(u_target_depth, numpy.logical_not(mask_u))
-    water_v = ma.masked_array(v_target_depth, numpy.logical_not(mask_v))
+    water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(mask_u))
+    water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(mask_v))
 
     # u/v masked values need to be set to 0 for averaging
     water_u = water_u.filled(0)
     water_v = water_v.filled(0)
-    water_ang_rho = ma.masked_array(ang_rho, numpy.logical_not(mask_rho))
-    water_lat_rho = ma.masked_array(lat_rho, numpy.logical_not(mask_rho))
-    water_lon_rho = ma.masked_array(lon_rho, numpy.logical_not(mask_rho))
+    water_ang_rho = numpy.ma.masked_array(ang_rho, numpy.logical_not(mask_rho))
+    water_lat_rho = numpy.ma.masked_array(lat_rho, numpy.logical_not(mask_rho))
+    water_lon_rho = numpy.ma.masked_array(lon_rho, numpy.logical_not(mask_rho))
 
     return water_u, water_v, water_ang_rho, water_lat_rho, water_lon_rho
 
@@ -359,7 +358,7 @@ def vertical_interpolation(u, v, s_rho, mask_rho, mask_u, mask_v, zeta, h, hc, c
             surface in meters, default target depth is 4.5 meters, target interpolation
             depth must be greater or equal to 0.
     """
-    zeta = ma.masked_array(zeta[time_index, :, :], numpy.logical_not(mask_rho))
+    zeta = numpy.ma.masked_array(zeta[time_index, :, :], numpy.logical_not(mask_rho))
     true_depth = h + zeta
     z = numpy.ma.empty(shape=[num_sigma, num_eta, num_xi])
 

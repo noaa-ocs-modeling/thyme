@@ -8,11 +8,11 @@ triangular cells and a generalized(bathymetry-following) vertical coordinate sys
 This module provides functionality allowing FVCOM output to be interpolated to
 a regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
 """
-
-import numpy
 import datetime
+
 import netCDF4
-import ogr
+import numpy
+from osgeo import ogr
 from scipy import interpolate
 
 from thyme.model import model

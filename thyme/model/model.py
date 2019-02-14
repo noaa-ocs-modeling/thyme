@@ -7,18 +7,15 @@ This module provides functionality allowing ocean models
 to be interpolated to a regular, orthogonal lat/lon horizontal grid.
 
 """
-
+import json
 import math
 import os
 
-import gdal
-import json
 import netCDF4
 import numpy
-import osr
-import ogr
-from shapely.geometry import shape
+from osgeo import gdal, osr, ogr
 from scipy.interpolate import griddata
+from shapely.geometry import shape
 
 from thyme.regulargrid import RegularGrid
 
