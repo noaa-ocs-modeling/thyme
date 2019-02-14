@@ -14,7 +14,7 @@ import netCDF4
 import ogr
 from scipy import interpolate
 
-from thyme.thyme.model import model
+from thyme.model import model
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
