@@ -1,12 +1,20 @@
 """
-Utility classes and methods for working with NOAA/NOS FVCOM ocean model forecast guidance.
+Utility classes and methods for working with FVCOM output.
 
-The Finite-Volume, primitive equation Community Ocean Modeling System (FVCOM)
-is a unstructured-grid, finite-volume, free-surface, 3D primitive equation
-coastal ocean circulation model. The horizontal grid is comprised of unstructured
-triangular cells and a generalized(bathymetry-following) vertical coordinate system.
+The Unstructured Grid Finite Volume Community Ocean Model (FVCOM) is "a
+prognostic, unstructured-grid, finite-volume, free-surface, 3-D primitive
+equation coastal ocean circulation model developed by UMASSD-WHOI joint
+efforts. ...The horizontal grid is comprised of unstructured triangular cells
+and the irregular bottom is presented using generalized terrain-following
+coordinates." See http://fvcom.smast.umassd.edu/fvcom/ for more information.
+
 This module provides functionality allowing FVCOM output to be interpolated to
 a regular, orthogonal lat/lon horizontal grid at a given depth-below-surface.
+
+Currently, this module has only been tested to work with FVCOM-based National
+Ocean Service (NOS) Operational Forecast Systems (OFS), e.g. NGOFS, NEGOFS,
+NWGOFS, and LEOFS, and would likely require modifications to support other
+FVCOM-based model output.
 """
 import datetime
 
@@ -21,14 +29,33 @@ from thyme.model import model
 FILLVALUE = -9999.0
 
 # Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = "scipy"
+INTERP_METHOD_SCIPY = 'scipy'
 
 # Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = "gdal"
+INTERP_METHOD_GDAL = 'gdal'
 
 
 class FVCOMIndexFile(model.ModelIndexFile):
-    """Store a regular grid mask based on FVCOM model grid properties in a NetCDF file."""
+    """NetCDF file containing metadata/grid info used during FVCOM processing.
+
+    Store a regular grid definition, mask, and other information needed to
+    process/convert native output from an FVCOM-based hydrodynamic model,
+    within a reusable NetCDF file.
+
+    Support is included for defining a set of regular, orthogonal subgrids that
+    allow the data to be subset into multiple sub-domains during processing.
+    This is accomplished by specifying a polygon shapefile containing one or
+    more rectangular, orthogonal polygons defining areas where output data will
+    be cropped and written to distinct output files.
+
+    A unique model index file must be created for each combination of model,
+    output grid resolution, land mask, and subset grid definition, and must be
+    regenerated if anything changes (i.e., when a model domain extent is
+    modified or the target output grid is redefined, a new model index file
+    must be created before processing can resume). Until any of these
+    properties change, the index file may be kept on the data processing system
+    and reused in perpetuity.
+    """
     def __init__(self, path):
         super().__init__(path)
 
@@ -67,22 +94,22 @@ class FVCOMIndexFile(model.ModelIndexFile):
         # For FVCOM models horizontally interpolate sigma values to the centroid
         (siglay_centroid, latc, lonc, num_nele, num_siglay) = model_file.sigma_to_centroid(vertical_coordinates)
 
-        self.nc_file.createDimension("nele", num_nele)
-        self.nc_file.createDimension("siglay", num_siglay)
+        self.nc_file.createDimension('nele', num_nele)
+        self.nc_file.createDimension('siglay', num_siglay)
 
         var_lonc = self.nc_file.createVariable('lon_centroid', 'f4', 'nele', fill_value=-9999)
-        var_lonc.long_name = "longitude of unstructured centroid point"
-        var_lonc.units = "degree_east"
-        var_lonc.standard_name = "longitude"
+        var_lonc.long_name = 'longitude of unstructured centroid point'
+        var_lonc.units = 'degree_east'
+        var_lonc.standard_name = 'longitude'
 
         var_latc = self.nc_file.createVariable('lat_centroid', 'f4', 'nele', fill_value=-9999)
-        var_latc.long_name = "latitude of unstructured centroid point"
-        var_latc.units = "degree_north"
-        var_latc.standard_name = "latitude"
+        var_latc.long_name = 'latitude of unstructured centroid point'
+        var_latc.units = 'degree_north'
+        var_latc.standard_name = 'latitude'
 
-        var_siglay_centroid = self.nc_file.createVariable('siglay_centroid', 'f4', ("siglay", "nele",), fill_value=FILLVALUE)
-        var_siglay_centroid.long_name = "sigma layer at unstructured centroid point"
-        var_siglay_centroid.coordinates = "lat_centroid lon_centroid"
+        var_siglay_centroid = self.nc_file.createVariable('siglay_centroid', 'f4', ('siglay', 'nele',), fill_value=FILLVALUE)
+        var_siglay_centroid.long_name = 'sigma layer at unstructured centroid point'
+        var_siglay_centroid.coordinates = 'lat_centroid lon_centroid'
 
         var_siglay_centroid[:, :] = siglay_centroid
         var_latc[:] = latc
@@ -245,11 +272,11 @@ class FVCOMFile(model.ModelFile):
         """Determine FVCOM-based OFS vertical sigma coordinate type"""
 
         siglay_values = self.var_siglay[:, 0]
-        vertical_coordinates = "UNIFORM"
+        vertical_coordinates = 'UNIFORM'
         for i in range(self.var_siglay.shape[1]):
             for s in range(self.var_siglay.shape[0]):
                 if self.var_siglay[s, i] != siglay_values[s]:
-                    vertical_coordinates = "GENERALIZED"
+                    vertical_coordinates = 'GENERALIZED'
                     break
 
         return vertical_coordinates
@@ -265,7 +292,7 @@ class FVCOMFile(model.ModelFile):
 
         # Sigma vertical coordinate type
         # Generalized or Uniform
-        if vertical_coordinates == "GENERALIZED":
+        if vertical_coordinates == 'GENERALIZED':
             for i in range(self.num_siglay):
                 coords = numpy.column_stack((self.var_lon_nodal, self.var_lat_nodal))
                 siglay_centroid[i, :] = interpolate.griddata(coords, self.var_siglay[i, :], (self.var_lon_centroid, self.var_lat_centroid), method='linear')
@@ -319,9 +346,9 @@ def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, tim
         sigma_depth_layers[k, :] = siglay[k, :] * true_depth
 
     if target_depth < 0:
-        raise Exception("Target depth must be positive")
+        raise Exception('Target depth must be positive')
     if target_depth > numpy.nanmax(true_depth):
-        raise Exception("Target depth exceeds total depth")
+        raise Exception('Target depth exceeds total depth')
 
     # For areas shallower than the target depth, depth is half the total depth
     interp_depth = zeta - numpy.minimum(target_depth * 2, true_depth) / 2

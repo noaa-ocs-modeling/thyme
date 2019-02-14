@@ -1,11 +1,15 @@
 """
-Utility classes and methods for working with numerical ocean models
-and deriving water currents.
+Utility classes and methods for working with hydrodynamic model output.
 
+This module provides functionality allowing ocean model output variables to be
+interpolated to a regular, orthogonal lat/lon horizontal grid, and supports
+vertical interpolation of some variables (e.g. water currents) to a specified
+depth-below-surface.
 
-This module provides functionality allowing ocean models
-to be interpolated to a regular, orthogonal lat/lon horizontal grid.
-
+The classes in this module are abstract, meaning that they are intended to be
+subclassed in order to support a distinct modeling system, as the details
+involved with many of the processing steps are highly dependent on the
+characteristics of the target hydrodynamic model.
 """
 import json
 import math
@@ -26,26 +30,36 @@ MS2KNOTS = 1.943844
 FILLVALUE = -9999.0
 
 # Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = "scipy"
+INTERP_METHOD_SCIPY = 'scipy'
 
 # Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = "gdal"
+INTERP_METHOD_GDAL = 'gdal'
 
 
 class ModelIndexFile:
-    """Store a regular grid numpy.array and mask for model of interest in a NetCDF file.
-        Created once per model, resolution, model domain extent, and subset model extents.
-        These values are stored in the output index file for use when regridding native model
-        output to the regular grid. As long as the regular grid remains the same, these values
-        will not change, thus the index file only needs to be generated once per model
-        and kept on the data processing system in perpetuity.
+    """NetCDF file containing metadata/grid info used during model processing.
 
-        Option: Store subset information to index file to be used to subset model
-        into multiple output files.
-    
+    Store a regular grid definition, mask, and other information needed to
+    process/convert native output from a hydrodynamic model, within a reusable
+    NetCDF file.
+
+    Support is included for defining a set of regular, orthogonal subgrids that
+    allow the data to be subset into multiple sub-domains during processing.
+    This is accomplished by specifying a polygon shapefile containing one or
+    more rectangular, orthogonal polygons defining areas where output data will
+    be cropped and written to distinct output files.
+
+    A unique model index file must be created for each combination of model,
+    output grid resolution, land mask, and subset grid definition, and must be
+    regenerated if anything changes (i.e., when a model domain extent is
+    modified or the target output grid is redefined, a new model index file
+    must be created before processing can resume). Until any of these
+    properties change, the index file may be kept on the data processing system
+    and reused in perpetuity.
+
     Attributes:
         path: Path (relative or absolute) of the file..
-        nc_file: Handle to `netCDF4.Dataset` instance for the opened NetCDF
+        nc_file: Handle to ``netCDF4.Dataset`` instance for the opened NetCDF
             file.
         dim_x: Handle to x dimension.
         dim_y: Handle to y dimension.
@@ -53,7 +67,6 @@ class ModelIndexFile:
         var_y: Handle to y coordinate variable (latitudes).
         var_mask: Handle to master_mask variable.
     """
-
     DIMNAME_X = 'x'
     DIMNAME_Y = 'y'
     DIMNAME_SUBGRID = 'subgrid'
@@ -61,7 +74,7 @@ class ModelIndexFile:
     def __init__(self, path):
         """Initialize ModelIndexFile object and open file at specified path.
 
-        If file already exists and `clobber==False`, it will be opened in
+        If file already exists and ``clobber==False``, it will be opened in
         read mode. Otherwise, it will be opened in write mode.
         
         Args:
@@ -90,11 +103,11 @@ class ModelIndexFile:
                 specified path, if any, will be deleted and the new file will
                 be opened in write mode.
         """
-        # nc_file: Handle to `netCDF4.Dataset` instance for the opened NetCDF
+        # nc_file: Handle to ``netCDF4.Dataset`` instance for the opened NetCDF
         if not os.path.exists(self.path) or clobber:
-            self.nc_file = netCDF4.Dataset(self.path, "w", format="NETCDF4")
+            self.nc_file = netCDF4.Dataset(self.path, 'w', format='NETCDF4')
         else:
-            self.nc_file = netCDF4.Dataset(self.path, "r", format="NETCDF4")
+            self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF4')
             self.init_handles()
 
     def close(self):
@@ -151,19 +164,19 @@ class ModelIndexFile:
 
         # Create coordinate variables with same name as dimensions
         self.var_y = self.nc_file.createVariable(self.DIMNAME_Y, 'f4', (self.DIMNAME_Y,), fill_value=FILLVALUE)
-        self.var_y.long_name = "latitude of regular grid point at cell center"
-        self.var_y.units = "degree_north"
-        self.var_y.standard_name = "latitude"
+        self.var_y.long_name = 'latitude of regular grid point at cell center'
+        self.var_y.units = 'degree_north'
+        self.var_y.standard_name = 'latitude'
 
         self.var_x = self.nc_file.createVariable(self.DIMNAME_X, 'f4', (self.DIMNAME_X,), fill_value=FILLVALUE)
-        self.var_x.long_name = "longitude of regular grid point at cell center"
-        self.var_x.units = "degree_east"
-        self.var_x.standard_name = "longitude"
+        self.var_x.long_name = 'longitude of regular grid point at cell center'
+        self.var_x.units = 'degree_east'
+        self.var_x.standard_name = 'longitude'
 
         self.var_mask = self.nc_file.createVariable('mask', 'i4', (self.DIMNAME_Y, self.DIMNAME_X), fill_value=FILLVALUE)
-        self.var_mask.long_name = "regular grid point mask"
+        self.var_mask.long_name = 'regular grid point mask'
         self.var_mask.flag_values = -9999.0, 1
-        self.var_mask.flag_meanings = "land, water"
+        self.var_mask.flag_meanings = 'land, water'
 
     def create_subgrid_dims_vars(self, num_subgrids, subset_grid_field_name=None):
         """Create subgrid-related NetCDF dimensions/variables.
@@ -187,7 +200,7 @@ class ModelIndexFile:
         """Initialize NetCDF dimensions/variables/attributes.
 
         Args:
-            model_file: `ModelFile` instance containing model output used
+            model_file: ``ModelFile`` instance containing model output used
                 to identify properties of original grid.
             target_cellsize_meters: Target cell size of grid cells, in meters.
                 Actual calculated x/y grid cell sizes will vary slightly from
@@ -209,14 +222,13 @@ class ModelIndexFile:
                 desired and the extent of the model will be used instead.
             subset_grid_field_name: (Optional, default None) Shapefile
                 field name to be stored in the index file.
-
         """
         # Calculate extent of valid (water) points
         (lon_min, lon_max, lat_min, lat_max) = model_file.get_valid_extent()
 
         # Index file global attributes
         self.nc_file.model = str.upper(ofs_model)
-        self.nc_file.format = "NetCDF-4"
+        self.nc_file.format = 'NetCDF-4'
 
         shoreline_path, shoreline = os.path.split(shoreline_shp)
         self.nc_file.shoreline = str(shoreline)
@@ -243,7 +255,7 @@ class ModelIndexFile:
         if shoreline_shp is not None:
             land_mask = self.init_shoreline_mask(reg_grid, shoreline_shp)
 
-        print ("Full grid dimensions (y,x): ({},{})".format(len(reg_grid.y_coords), len(reg_grid.x_coords)))
+        print ('Full grid dimensions (y,x): ({},{})'.format(len(reg_grid.y_coords), len(reg_grid.x_coords)))
 
         # Calculate the mask
         grid_cell_mask = self.compute_grid_mask(model_file, reg_grid)
@@ -296,11 +308,11 @@ class ModelIndexFile:
         Raises: Exception when given subset grid shapefile does not exist or
             does not include any grid polygons intersecting with given extent.
 
-        Returns: Instance of `RegularGrid` representing the extended generated
+        Returns:
+            Instance of ``RegularGrid`` representing the extended generated
             grid whose extent matches the union of all intersecting subset grid
             polygons.
         """
-
         shp = ogr.Open(subset_grid_shp)
         layer = shp.GetLayer()
 
@@ -317,7 +329,7 @@ class ModelIndexFile:
 
         # Get the EPSG value from the import shapefile and transform to WGS84
         spatial_ref = layer.GetSpatialRef()
-        shp_srs = spatial_ref.GetAttrValue("AUTHORITY", 1)
+        shp_srs = spatial_ref.GetAttrValue('AUTHORITY', 1)
         source = osr.SpatialReference()
         source.ImportFromEPSG(int(shp_srs))
         target = osr.SpatialReference()
@@ -333,7 +345,7 @@ class ModelIndexFile:
         for feature in layer:
             geom = feature.GetGeometryRef()
             intersection = ofs_poly.Intersection(geom)
-            if intersection.ExportToWkt() != "GEOMETRYCOLLECTION EMPTY":
+            if intersection.ExportToWkt() != 'GEOMETRYCOLLECTION EMPTY':
                 subset_polys[fid] = geom.ExportToJson()
                 if subset_grid_field_name is not None:
                     field_name = feature.GetField(str(subset_grid_field_name))
@@ -344,7 +356,7 @@ class ModelIndexFile:
             fid += 1
 
         if len(fids) == 0:
-            raise Exception("Given subset grid shapefile contains no polygons that intersect with model domain; cannot proceed.")
+            raise Exception('Given subset grid shapefile contains no polygons that intersect with model domain; cannot proceed.')
 
         # Use a single subset polygon to calculate x/y cell sizes. This ensures
         # that cells do not fall on the border between two grid polygons.
@@ -416,11 +428,10 @@ class ModelIndexFile:
 
     @staticmethod
     def init_shoreline_mask(reg_grid, shoreline_shp):
-        """Create a shoreline mask for the region of interest at the
-           target resolution.
+        """Create a shoreline mask for region of interest at target resolution.
         
         Args:
-            reg_grid: `RegularGrid` instance describing the regular grid for
+            reg_grid: ``RegularGrid`` instance describing the regular grid for
                 which the shoreline mask will be created.
             shoreline_shp: Path to a polygon shapefile containing features
                 identifying land areas.
@@ -430,7 +441,6 @@ class ModelIndexFile:
             containing a value of 0 for water areas and a value of 255 for land
             areas.
         """
-
         shp = ogr.Open(shoreline_shp)
         layer = shp.GetLayer()
 
@@ -447,7 +457,7 @@ class ModelIndexFile:
 
         # Get the EPSG value from the import shapefile and transform to WGS84
         spatial_ref = layer.GetSpatialRef()
-        shp_srs = spatial_ref.GetAttrValue("AUTHORITY", 1)
+        shp_srs = spatial_ref.GetAttrValue('AUTHORITY', 1)
         source = osr.SpatialReference()
         source.ImportFromEPSG(int(shp_srs))
         target = osr.SpatialReference()
@@ -478,7 +488,7 @@ class ModelIndexFile:
         pixel_height = reg_grid.cellsize_y
         cols = len(reg_grid.y_coords)
         rows = len(reg_grid.x_coords)
-        target_dset = gdal.GetDriverByName('MEM').Create("land_mask.tif", rows, cols, 1, gdal.GDT_Byte)
+        target_dset = gdal.GetDriverByName('MEM').Create('land_mask.tif', rows, cols, 1, gdal.GDT_Byte)
         target_dset.SetGeoTransform((reg_grid.x_min, pixel_width, 0, reg_grid.y_min, 0,  pixel_height))
         target_dset_srs = osr.SpatialReference()
         target_dset_srs.ImportFromEPSG(4326)
@@ -498,31 +508,49 @@ class ModelIndexFile:
     def compute_grid_mask(self, model_file, reg_grid):
         """Create regular grid model domain mask.
 
+        The model domain mask identifies which output grid cells may contain
+        valid data based on the model's grid coverage (however, this mask
+        should be combined with a shoreline mask to create a combined mask).
+
+        This function should be overridden by the subclass, as its
+        implementation is very specific to the characteristics of the native
+        model grid.
+
         Args:
-            model_file: 'ModelFile' instance containing model irregular grid
-                structure and variables.
-            reg_grid: `RegularGrid` instance describing the regular grid for
+            model_file: ``ModelFile`` instance containing model native grid
+                structure variables.
+            reg_grid: ``RegularGrid`` instance describing the regular grid for
                 which the mask will be created.
         """
         pass
 
     @staticmethod
     def rasterize_mask(reg_grid, layer):
-        """Rasterize model domain mask from irregular grid cell polygons.
+        """Rasterize model domain mask from native grid cell polygons.
 
-                Args:
-                    reg_grid: `RegularGrid` instance describing the regular grid for
-                        which the mask will be created.
-                    layer: Derived from modeling framework module(i.e. roms, fvcom, etc.)
-                        contains irregular or unstructured grid cell polygons.
-                """
+        This creates an in-memory representation 
+
+        Args:
+            reg_grid: ``RegularGrid`` instance describing the regular grid for
+                which the mask will be created.
+            layer: ``osgeo.ogr.Layer`` instance containing polygon features
+                representing valid data areas. Should be derived from the
+                native model grid based on its characteristics (e.g. irregular
+                vs unstructured grid cells, internal model grid mask, etc.).
+
+        Returns:
+            ``numpy`` ``int`` array, corresponding with specified
+            ``RegularGrid``, identifying valid and not-valid output grid cells.
+            Valid cells are set to a value of ``1`` while invalid cells are set
+            to ``0``.
+        """
         # Rasterize the grid cell polygon layer and write to memory
         # Optionally write to gdal.GetDriverByName('GTIFF') for output a GeoTIFF
         pixel_width = reg_grid.cellsize_x
         pixel_height = reg_grid.cellsize_y
         cols = len(reg_grid.y_coords)
         rows = len(reg_grid.x_coords)
-        target_dset = gdal.GetDriverByName('MEM').Create("grid_cell_mask.tif", rows, cols, 1, gdal.GDT_Byte)
+        target_dset = gdal.GetDriverByName('MEM').Create('grid_cell_mask.tif', rows, cols, 1, gdal.GDT_Byte)
         target_dset.SetGeoTransform((reg_grid.x_min, pixel_width, 0, reg_grid.y_min, 0, pixel_height))
         target_dset_srs = osr.SpatialReference()
         target_dset_srs.ImportFromEPSG(4326)
@@ -567,33 +595,35 @@ class ModelIndexFile:
 class ModelFile:
     """Read/process data from a numerical ocean model file.
 
-    This is a parent class that should be inherited from. This
-    class opens a NetCDF model file, reads variables, gets model
-    domain extent and converts model variables u/v to a regular
-    grid.
+    This is an abstract base class that should be inherited from.
 
+    Opens a NetCDF model file, reads variables, gets model domain extent,
+    converts values, and interpolates model variables to a regular grid.
     """
     def __init__(self, path):
         """Initialize model file object and opens file at specified path.
 
         Args:
             path: Path of target NetCDF file.
-        
-        Raises:
-            Exception: Specified NetCDF file does not exist.
         """
         self.path = path
         self.nc_file = None
 
     def open(self):
+        """Open the model output file in read mode.
+
+        Raises:
+            Exception: If specified NetCDF file does not exist.
+        """
         if os.path.exists(self.path):
-            self.nc_file = netCDF4.Dataset(self.path, "r", format="NETCDF3_CLASSIC")
+            self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF3_CLASSIC')
             self.init_handles()
         else:
             # File doesn't exist, raise error
-            raise(Exception("NetCDF file does not exist: {}".format(self.path)))
+            raise(Exception('NetCDF file does not exist: {}'.format(self.path)))
 
     def close(self):
+        """Close the model output file."""
         self.nc_file.close()
 
     def release_resources(self):
@@ -609,9 +639,10 @@ class ModelFile:
         pass
 
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=None):
-        """Execute functions to process model variables to a regular grid, model specific
-           functions and interpolation method derived from modeling framework module of
-           interest(i.e. roms, fvcom, etc.).
+        """Interpolate u/v current velocity components to regular grid.
+        
+        This function should be overridden, as its implementation is very
+        specific to the characteristics of the native model output.
         """
         pass
 
@@ -623,13 +654,14 @@ def uv_to_speed_direction(reg_grid_u, reg_grid_v):
     be converted to knots and direction in degrees from true north (0-360).
 
     Args:
-        reg_grid_u: `numpy.ma.masked_array` containing u values interpolated to
-            the regular grid.
-        reg_grid_v: `numpy.ma.masked_array` containing v values interpolated to
-            the regular grid.
+        reg_grid_u: ``numpy.ma.masked_array`` containing u values interpolated
+            to the regular grid.
+        reg_grid_v: ``numpy.ma.masked_array`` containing v values interpolated
+            to the regular grid.
 
     Returns:
-        Two tuple of speed and direction
+        Two-tuple containing the 2D ``numpy.ma.masked_array``s for direction
+        and speed (in that order).
     """
     direction = numpy.ma.empty((reg_grid_u.shape[0], reg_grid_u.shape[1]), dtype=numpy.float32)
     speed = numpy.ma.empty((reg_grid_u.shape[0], reg_grid_u.shape[1]), dtype=numpy.float32)
@@ -663,22 +695,22 @@ def uv_to_speed_direction(reg_grid_u, reg_grid_v):
 
 
 def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Create a regular grid using masked latitude and longitude variables.
+    """Linear-interpolate irregularly-spaced u/v values to regular grid.
+    
+    Uses ``scipy.interpolate.griddata`` for linear interpolation.
 
-       Interpolate u/v variables to the regular grid using Linear Interpolation.
-
-       Args:
-           u: `numpy.ma.masked_array` containing u values with NoData/land values
-               masked out.
-           v: `numpy.ma.masked_array` containing v values with NoData/land values
-               masked out.
-           lat: `numpy.ndarray` containing masked latitude values of rho
-               or centroid points.
-           lon: `numpy.ndarray` containing masked longitude values of rho
-               or centroid points.
-           model_index: `ModelIndexFile` from which index values will
-               be extracted to perform interpolation.
-       """
+    Args:
+        u: ``numpy.ma.masked_array`` containing u values with NoData/land
+            values masked out.
+        v: ``numpy.ma.masked_array`` containing v values with NoData/land
+            values masked out.
+        lat: ``numpy.ndarray`` containing latitude positions of corresponding
+            input u/v values.
+        lon: ``numpy.ndarray`` containing longitude positions of corresponding
+            input u/v values
+        model_index: ``ModelIndexFile`` containing output regular grid
+            definition.
+    """
 
     # Using scipy to interpolate irregular spaced u/v points to a regular grid
     x, y = numpy.meshgrid(model_index.var_x, model_index.var_y)
@@ -690,46 +722,46 @@ def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
 
 
 def gdal_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Create a regular grid using masked latitude and longitude variables.
+    """Linear-interpolate irregularly-spaced u/v values to regular grid.
 
-    Interpolate u/v variables to the regular grid using Linear Interpolation.
+    Uses ``gdal.Grid`` for linear interpolation.
 
     Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land values
-           masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land values
-           masked out.
-        lat: `numpy.ndarray` containing masked latitude values of rho
-           or centroid points.
-        lon: `numpy.ndarray` containing masked longitude values of rho
-           or centroid points.
-        model_index: `ModelIndexFile` from which index values will
-           be extracted to perform interpolation.
+        u: ``numpy.ma.masked_array`` containing u values with NoData/land
+            values masked out.
+        v: ``numpy.ma.masked_array`` containing v values with NoData/land
+            values masked out.
+        lat: ``numpy.ndarray`` containing latitude positions of corresponding
+            input u/v values.
+        lon: ``numpy.ndarray`` containing longitude positions of corresponding
+            input u/v values
+        model_index: ``ModelIndexFile`` containing output regular grid
+            definition.
     """
     # Create an ogr object containing irregularly spaced points for u,v,lat,lon
     # and write to memory
     srs = osr.SpatialReference()
-    srs.SetWellKnownGeogCS("WGS84")
+    srs.SetWellKnownGeogCS('WGS84')
     ds = gdal.GetDriverByName('Memory').Create('', 0, 0, 0, gdal.GDT_Float32)
-    layer = ds.CreateLayer("irregular_points", srs=srs, geom_type=ogr.wkbPoint)
-    layer.CreateField(ogr.FieldDefn("u", ogr.OFTReal))
-    layer.CreateField(ogr.FieldDefn("v", ogr.OFTReal))
+    layer = ds.CreateLayer('irregular_points', srs=srs, geom_type=ogr.wkbPoint)
+    layer.CreateField(ogr.FieldDefn('u', ogr.OFTReal))
+    layer.CreateField(ogr.FieldDefn('v', ogr.OFTReal))
 
     for i in range(len(v)):
         point = ogr.Geometry(ogr.wkbPoint)
         point.AddPoint(lon[i], lat[i])
         feature = ogr.Feature(layer.GetLayerDefn())
         feature.SetGeometry(point)
-        feature.SetField("u", u[i])
-        feature.SetField("v", v[i])
+        feature.SetField('u', u[i])
+        feature.SetField('v', v[i])
         layer.CreateFeature(feature)
 
     # Input ogr object to gdal grid and interpolate irregularly spaced u/v
     # to a regular grid
     dst_u = gdal.Grid('u.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm="linear:nodata=0.0", zfield="u")
+                      algorithm='linear:nodata=0.0', zfield='u')
     dst_v = gdal.Grid('v.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm="linear:nodata=0.0", zfield="v")
+                      algorithm='linear:nodata=0.0', zfield='v')
 
     reg_grid_u = dst_u.ReadAsArray()
     reg_grid_v = dst_v.ReadAsArray()
