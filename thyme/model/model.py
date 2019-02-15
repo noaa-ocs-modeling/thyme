@@ -111,6 +111,7 @@ class ModelIndexFile:
             self.init_handles()
 
     def close(self):
+        """Close netCDF file."""
         self.nc_file.close()
 
     def init_handles(self):
@@ -711,7 +712,6 @@ def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
         model_index: ``ModelIndexFile`` containing output regular grid
             definition.
     """
-
     # Using scipy to interpolate irregular spaced u/v points to a regular grid
     x, y = numpy.meshgrid(model_index.var_x, model_index.var_y)
     coords = numpy.column_stack((lon, lat))
