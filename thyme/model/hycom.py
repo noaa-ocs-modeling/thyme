@@ -17,7 +17,6 @@ import datetime
 
 import netCDF4
 import numpy
-import numpy.ma as ma
 from osgeo import ogr
 from scipy import interpolate
 
@@ -233,15 +232,15 @@ def compress_variables(u_target_depth, v_target_depth, lat, lon, mask):
         lon: `numpy.ma.masked_array` containing longitude values.
         mask: `numpy.ma.masked_array` containing mask values.
     """
-    water_lat_rho = ma.masked_array(lat, mask.mask)
-    water_lon_rho = ma.masked_array(lon, mask.mask)
-    water_u = ma.masked_array(u_target_depth, mask.mask)
-    water_v = ma.masked_array(v_target_depth, mask.mask)
+    water_lat_rho = numpy.ma.masked_array(lat, mask.mask)
+    water_lon_rho = numpy.ma.masked_array(lon, mask.mask)
+    water_u = numpy.ma.masked_array(u_target_depth, mask.mask)
+    water_v = numpy.ma.masked_array(v_target_depth, mask.mask)
 
-    u_compressed = ma.compressed(water_u)
-    v_compressed = ma.compressed(water_v)
-    lat_compressed = ma.compressed(water_lat_rho)
-    lon_compressed = ma.compressed(water_lon_rho)
+    u_compressed = numpy.ma.compressed(water_u)
+    v_compressed = numpy.ma.compressed(water_v)
+    lat_compressed = numpy.ma.compressed(water_lat_rho)
+    lon_compressed = numpy.ma.compressed(water_lon_rho)
 
     return u_compressed, v_compressed, lat_compressed, lon_compressed
 

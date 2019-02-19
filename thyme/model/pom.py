@@ -18,7 +18,6 @@ import datetime
 
 import netCDF4
 import numpy
-import numpy.ma
 from osgeo import ogr
 from scipy import interpolate
 
