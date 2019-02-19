@@ -436,16 +436,10 @@ def vertical_interpolation(u, v, s_rho, mask_rho, mask_u, mask_v, zeta, h, hc, c
             if not zeta.mask[eta, xi]:
                 if mask_u[eta, xi] != 0:
                     u_interp_depth = interpolate.interp1d(z[:, eta, xi], u[time_index, :, eta, xi], fill_value='extrapolate')
-                    u_target_depth = u_interp_depth(interp_depth.data[eta, xi])
-                    if u_target_depth >= 9999.0:
-                        continue
-                    u_target_depth[eta, xi] = u_target_depth
+                    u_target_depth[eta, xi] = u_interp_depth(interp_depth.data[eta, xi])
 
                 if mask_v[eta, xi] != 0:
                     v_interp_depth = interpolate.interp1d(z[:, eta, xi], v[time_index, :, eta, xi], fill_value='extrapolate')
-                    v_target_depth = v_interp_depth(interp_depth.data[eta, xi])
-                    if v_target_depth >= 9999.0:
-                        continue
-                    v_target_depth[eta, xi] = v_target_depth
+                    v_target_depth[eta, xi] = v_interp_depth(interp_depth.data[eta, xi])
 
     return u_target_depth, v_target_depth
