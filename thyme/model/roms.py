@@ -141,10 +141,12 @@ class ROMSFile(model.ModelFile):
         self.var_cs_r = None
         self.var_vtransform = None
         self.var_time = None
+        self.time_units = None
         self.num_eta = None
         self.num_xi = None
         self.num_sigma = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def close(self):
@@ -167,10 +169,12 @@ class ROMSFile(model.ModelFile):
         self.var_cs_r = None
         self.var_vtransform = None
         self.var_time = None
+        self.time_units = None
         self.num_eta = None
         self.num_xi = None
         self.num_sigma = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def get_valid_extent(self):
@@ -210,16 +214,18 @@ class ROMSFile(model.ModelFile):
         self.var_hc = self.nc_file.variables['hc'][:]
         self.var_cs_r = self.nc_file.variables['Cs_r'][:]
         self.var_vtransform = self.nc_file.variables['Vtransform'][:]
-        self.num_eta = self.var_h.shape[0]
-        self.num_xi = self.var_h.shape[1]
-        self.num_sigma = self.var_s_rho.shape[0]
-        self.num_times = self.var_u.shape[0]
+        self.var_time = self.nc_file.variables['ocean_time'][:]
+        self.time_units = self.nc_file.variables['ocean_time'].units
+        self.num_eta = self.nc_file.dimensions['eta_rho'].size - 1
+        self.num_xi = self.nc_file.dimensions['xi_rho'].size - 1
+        self.num_sigma = self.nc_file.dimensions['s_rho'].size
+        self.num_times = self.nc_file.dimensions['ocean_time'].size
 
         # Convert gregorian timestamp to datetime object
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_time = netCDF4.num2date(self.nc_file.variables['ocean_time'][:], self.nc_file.variables['ocean_time'].units, calendar='proleptic_gregorian')[time_index]
-            self.datetime_values.append(self.var_time)
+            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units, calendar='proleptic_gregorian')[time_index]
+            self.datetime_values.append(self.var_datetime)
 
         # Determine if sigma values are positive up or down from netCDF metadata
         if self.nc_file.variables['s_rho'].positive == 'down':

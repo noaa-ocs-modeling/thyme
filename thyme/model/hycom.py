@@ -142,10 +142,13 @@ class HYCOMFile(model.ModelFile):
         self.var_y = None
         self.var_depth = None
         self.var_time = None
+        self.time_units = None
+        self.var_datetime = None
         self.datetime_values = None
         self.var_mask = None
         self.num_x = None
         self.num_y = None
+        self.num_times = None
 
     def close(self):
         super().close()
@@ -161,10 +164,13 @@ class HYCOMFile(model.ModelFile):
         self.var_y = None
         self.var_depth = None
         self.var_time = None
+        self.time_units = None
+        self.var_datetime = None
         self.datetime_values = None
         self.var_mask = None
         self.num_x = None
         self.num_y = None
+        self.num_times = None
 
     def get_valid_extent(self):
         """Masked model domain extent."""
@@ -188,23 +194,27 @@ class HYCOMFile(model.ModelFile):
         self.var_y = self.nc_file.variables['Y'][:]
         self.var_depth = self.nc_file.variables['Depth'][:]
         self.var_time = self.nc_file.variables['MT'][:]
-        self.num_x = len(self.var_x)
-        self.num_y = len(self.var_y)
+        self.time_units = self.nc_file.variables['MT'].units
+        self.num_times = self.nc_file.dimensions['MT'].size
+        self.num_x = self.nc_file.dimensions['X'].size
+        self.num_y = self.nc_file.dimensions['Y'].size
         # Use the surface layer in the u variable to define a land mask
+        # Assuming this mask is sufficient for all variables, this may
+        # not be the case for all hycom models
         self.var_mask = self.nc_file.variables['u'][0, 0, :, :]
 
         # Convert timestamps to datetime objects and store in a list
         # Rounding to the nearest hour
         self.datetime_values = []
-        for time_index in range(len(self.var_time)):
-            self.var_time = netCDF4.num2date(self.nc_file.variables['MT'][:], self.nc_file.variables['MT'].units)[time_index]
-            print(self.var_time)
-            if self.var_time.minute >= 30:
+        for time_index in range(self.num_times):
+            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
+            print(self.var_datetime)
+            if self.var_datetime.minute >= 30:
                 # round up
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif self.var_time.minute < 30:
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
+            elif self.var_datetime.minute < 30:
                 # round down
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0)
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0)
 
             self.datetime_values.append(adjusted_time)
 
