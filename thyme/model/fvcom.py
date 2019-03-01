@@ -183,6 +183,7 @@ class FVCOMFile(model.ModelFile):
         self.var_nv = None
         self.var_wet_cells = None
         self.var_time = None
+        self.time_units = None
         self.var_siglay = None
         self.var_siglev = None
         self.num_siglay = None
@@ -190,6 +191,7 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def close(self):
@@ -208,6 +210,7 @@ class FVCOMFile(model.ModelFile):
         self.var_nv = None
         self.var_wet_cells = None
         self.var_time = None
+        self.time_units = None
         self.var_siglay = None
         self.var_siglev = None
         self.num_siglay = None
@@ -215,6 +218,7 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def get_valid_extent(self):
@@ -244,23 +248,25 @@ class FVCOMFile(model.ModelFile):
         self.var_h = self.nc_file.variables['h'][:]
         self.var_nv = self.nc_file.variables['nv'][:, :]
         self.var_wet_cells = self.nc_file.variables['wet_cells'][:, :]
-        self.num_node = len(self.var_h)
-        self.num_nele = len(self.var_lat_centroid)
-        self.num_siglay = self.var_siglay.shape[0]
-        self.num_siglev = self.var_siglev.shape[0]
-        self.num_times = self.var_u.shape[0]
+        self.var_time = self.nc_file.variables['time'][:]
+        self.time_units = self.nc_file.variables['time'].units
+        self.num_node = self.nc_file.dimensions['node'].size
+        self.num_nele = self.nc_file.dimensions['nele'].size
+        self.num_siglay = self.nc_file.dimensions['siglay'].size
+        self.num_siglev = self.nc_file.dimensions['siglev'].size
+        self.num_times = self.nc_file.dimensions['time'].size
 
         # Convert timestamp to datetime object
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_time = netCDF4.num2date(self.nc_file.variables['time'][:], self.nc_file.variables['time'].units)[time_index]
-
-            if self.var_time.minute >= 30:
+            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
+            print(self.var_datetime)
+            if self.var_datetime.minute >= 30:
                 # round up
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif self.var_time.minute < 30:
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
+            elif self.var_datetime.minute < 30:
                 # round down
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0)
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0)
 
             self.datetime_values.append(adjusted_time)
 

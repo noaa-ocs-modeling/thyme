@@ -194,10 +194,12 @@ class POMFile(model.ModelFile):
         self.var_depth = None
         self.var_sigma = None
         self.var_time = None
+        self.time_units = None
         self.num_sigma = None
         self.num_ny = None
         self.num_nx = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def close(self):
@@ -214,10 +216,12 @@ class POMFile(model.ModelFile):
         self.var_depth = None
         self.var_sigma = None
         self.var_time = None
+        self.time_units = None
         self.num_sigma = None
         self.num_ny = None
         self.num_nx = None
         self.num_times = None
+        self.var_datetime = None
         self.datetime_values = None
 
     def get_valid_extent(self):
@@ -243,23 +247,25 @@ class POMFile(model.ModelFile):
         self.var_zeta = self.nc_file.variables['zeta'][:, :, :]
         self.var_depth = self.nc_file.variables['depth'][:, :]
         self.var_sigma = self.nc_file.variables['sigma'][:]
-        self.num_sigma = self.var_sigma.shape[0]
-        self.num_ny = self.var_u.shape[2]
-        self.num_nx = self.var_u.shape[3]
-        self.num_times = self.var_u.shape[0]
+        self.var_time = self.nc_file.variables['time'][:]
+        self.time_units = self.nc_file.variables['time'].units
+        self.num_sigma = self.nc_file.dimensions['sigma'].size
+        self.num_ny = self.nc_file.dimensions['ny'].size
+        self.num_nx = self.nc_file.dimensions['nx'].size
+        self.num_times = self.nc_file.dimensions['time'].size
 
         # Convert timestamps to datetime objects and store in a list
         # Rounding to the nearest hour
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_time = netCDF4.num2date(self.nc_file.variables['time'][:], self.nc_file.variables['time'].units)[time_index]
-
-            if self.var_time.minute >= 30:
+            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
+            print(self.var_datetime)
+            if self.var_datetime.minute >= 30:
                 # round up
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif self.var_time.minute < 30:
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
+            elif self.var_datetime.minute < 30:
                 # round down
-                adjusted_time = datetime.datetime(self.var_time.year, self.var_time.month, self.var_time.day, self.var_time.hour, 0, 0)
+                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0)
 
             self.datetime_values.append(adjusted_time)
 
