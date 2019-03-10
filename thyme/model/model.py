@@ -647,8 +647,56 @@ class ModelFile:
         """
         pass
 
+    def optimize_ungeorectified_grid(self, time_index):
+        """Mask and compress lat/lon and u/v current velocity components.
 
-def uv_to_speed_direction(reg_grid_u, reg_grid_v):
+        This function should be overridden, as its implementation is very
+        specific to the characteristics of the native model output.
+        """
+        pass
+
+
+def irregular_uv_to_speed_direction(u, v):
+    """Convert u and v vectors to speed/direction.
+
+    Input u/v values are assumed to be in meters/sec. Output speed values will
+    be converted to knots and direction in degrees from true north (0-360).
+
+    Args:
+        u: ``numpy.ma.masked_array`` containing 1-dimension u values
+        v: ``numpy.ma.masked_array`` containing 1-dimension v values
+
+    Returns:
+        One-tuple containing the 2D ``numpy.ma.masked_array``s for direction
+        and speed (in that order).
+    """
+    direction = numpy.ma.empty(v.shape, dtype=numpy.float32)
+    speed = numpy.ma.empty(u.shape, dtype=numpy.float32)
+
+    for i in range(u.shape[0]):
+        u_ms = u[i]
+        v_ms = v[i]
+
+        # Convert from meters per second to knots
+        u_knot = u_ms * MS2KNOTS
+        v_knot = v_ms * MS2KNOTS
+
+        current_speed = math.sqrt(math.pow(u_knot, 2) + math.pow(v_knot, 2))
+        current_direction_radians = math.atan2(v_knot, u_knot)
+        current_direction_degrees = math.degrees(current_direction_radians)
+        current_direction_north = 90.0 - current_direction_degrees
+
+        # The direction must always be positive.
+        if current_direction_north < 0.0:
+            current_direction_north += 360.0
+
+        direction[i] = current_direction_north
+        speed[i] = current_speed
+
+    return direction, speed
+
+
+def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
     """Convert u and v vectors to speed/direction.
 
     Input u/v values are assumed to be in meters/sec. Output speed values will
