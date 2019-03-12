@@ -218,8 +218,8 @@ class RectilinearFile(model.ModelFile):
         elif interp == model.INTERP_METHOD_GDAL:
             return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
 
-    def optimize_ungeorectified_grid(self, time_index):
-        """Mask and compress lat/lon and u/v current velocity components"""
+    def ungeorectified_grid(self, time_index, target_depth):
+        """Process ungeorectified grids"""
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
 
@@ -227,7 +227,7 @@ class RectilinearFile(model.ModelFile):
 
 
 def compress_variables(u, v, lat, lon, mask, time_index):
-    """optimize variables.
+    """Optimize variables.
 
     Args:
         u: `numpy.ndarray` containing u values for entire grid.

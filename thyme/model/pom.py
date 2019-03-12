@@ -259,7 +259,6 @@ class POMFile(model.ModelFile):
         self.datetime_values = []
         for time_index in range(self.num_times):
             self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
-            print(self.var_datetime)
             if self.var_datetime.minute >= 30:
                 # round up
                 adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
@@ -276,7 +275,7 @@ class POMFile(model.ModelFile):
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
-        u_target_depth, v_target_depth= vertical_interpolation(self.var_u, self.var_v, self.var_mask, self.var_zeta, self.var_depth, self.var_sigma, self.num_sigma, self.num_ny, self.num_nx, time_index, target_depth)
+        u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_mask, self.var_zeta, self.var_depth, self.var_sigma, self.num_sigma, self.num_ny, self.num_nx, time_index, target_depth)
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(u_target_depth, v_target_depth, self.var_lat, self.var_lon, self.var_mask)
 
@@ -285,6 +284,15 @@ class POMFile(model.ModelFile):
             return model.scipy_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
         elif interp == model.INTERP_METHOD_GDAL:
             return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
+
+    def ungeorectified_grid(self, time_index, target_depth):
+        """Process ungeorectified grids"""
+
+        u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_mask, self.var_zeta, self.var_depth, self.var_sigma, self.num_sigma, self.num_ny, self.num_nx, time_index, target_depth)
+
+        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(u_target_depth, v_target_depth, self.var_lat, self.var_lon, self.var_mask)
+
+        return u_compressed, v_compressed, lat_compressed, lon_compressed
 
 
 def compress_variables(u_target_depth, v_target_depth, lat, lon, mask):

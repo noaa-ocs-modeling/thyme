@@ -231,6 +231,15 @@ class HYCOMFile(model.ModelFile):
         elif interp == model.INTERP_METHOD_GDAL:
             return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
 
+    def ungeorectified_grid(self, time_index, target_depth):
+        """Process ungeorectified grids"""
+
+        u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_depth, self.num_x, self.num_y, time_index, target_depth)
+
+        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(u_target_depth, v_target_depth, self.var_lat, self.var_lon, self.var_mask)
+
+        return u_compressed, v_compressed, lat_compressed, lon_compressed
+
 
 def compress_variables(u_target_depth, v_target_depth, lat, lon, mask):
     """Compress masked variables for interpolation.

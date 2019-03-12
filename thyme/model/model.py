@@ -647,8 +647,8 @@ class ModelFile:
         """
         pass
 
-    def optimize_ungeorectified_grid(self, time_index):
-        """Mask and compress lat/lon and u/v current velocity components.
+    def ungeorectified_grid(self, time_index, target_depth):
+        """Process ungeorectified grids.
 
         This function should be overridden, as its implementation is very
         specific to the characteristics of the native model output.
