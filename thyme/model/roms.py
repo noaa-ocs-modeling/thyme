@@ -260,6 +260,29 @@ class ROMSFile(model.ModelFile):
             return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed,
                                                              model_index)
 
+    def ungeorectified_grid(self, time_index, target_depth):
+        """Process ungeorectified grids"""
+
+        u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_s_rho,
+                                                                self.var_mask_rho, self.var_mask_u, self.var_mask_v,
+                                                                self.var_zeta, self.var_h, self.var_hc, self.var_cs_r,
+                                                                self.var_vtransform, self.num_eta, self.num_xi,
+                                                                self.num_sigma, time_index, target_depth)
+
+        water_u, water_v, water_ang_rho, water_lat_rho, water_lon_rho = mask_land(u_target_depth, v_target_depth,
+                                                                                  self.var_ang_rho, self.var_lat_rho,
+                                                                                  self.var_lon_rho, self.var_mask_u,
+                                                                                  self.var_mask_v, self.var_mask_rho)
+
+        u_rho, v_rho = average_uv2rho(water_u, water_v)
+
+        rot_u_rho, rot_v_rho = rotate_uv2d(u_rho, v_rho, water_ang_rho)
+
+        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(rot_u_rho, rot_v_rho,
+                                                                                        water_lat_rho, water_lon_rho)
+
+        return u_compressed, v_compressed, lat_compressed, lon_compressed
+
 
 def compress_variables(rot_u_rho, rot_v_rho, water_lat_rho, water_lon_rho):
     """Compress masked variables for interpolation.
