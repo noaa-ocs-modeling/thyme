@@ -20,7 +20,7 @@ import datetime
 
 import netCDF4
 import numpy
-from osgeo import ogr
+from osgeo import ogr, osr
 from scipy import interpolate
 
 from thyme.model import model
@@ -130,7 +130,7 @@ class FVCOMIndexFile(model.ModelIndexFile):
         # Create OGR layer in memory
         driver = ogr.GetDriverByName('Memory')
         dset = driver.CreateDataSource('grid_cell_mask')
-        dset_srs = ogr.osr.SpatialReference()
+        dset_srs = osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
         layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
