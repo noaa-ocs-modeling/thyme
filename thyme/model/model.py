@@ -522,8 +522,11 @@ class ModelIndexFile:
                 structure variables.
             reg_grid: ``RegularGrid`` instance describing the regular grid for
                 which the mask will be created.
+
+        Raises:
+            `NotImplementedError`: If subclass has not overridden this method.
         """
-        pass
+        raise NotImplementedError("model.compute_grid_mask() must be overridden by subclass")
 
     @staticmethod
     def rasterize_mask(reg_grid, layer):
@@ -628,16 +631,16 @@ class ModelFile:
         self.nc_file.close()
 
     def release_resources(self):
-        pass
+        raise NotImplementedError("model.release_resources() must be overridden by subclass")
 
     def get_valid_extent(self):
-        pass
+        raise NotImplementedError("model.get_valid_extent() must be overridden by subclass")
 
     def init_handles(self):
-        pass
+        raise NotImplementedError("model.init_handles() must be overridden by subclass")
 
     def get_vertical_coordinate_type(self):
-        pass
+        raise NotImplementedError("model.get_vertical_coordinate_type() must be overridden by subclass")
 
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=None):
         """Interpolate u/v current velocity components to regular grid.
@@ -645,7 +648,7 @@ class ModelFile:
         This function should be overridden, as its implementation is very
         specific to the characteristics of the native model output.
         """
-        pass
+        raise NotImplementedError("model.uv_to_regular_grid() must be overridden by subclass")
 
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids.
@@ -653,7 +656,7 @@ class ModelFile:
         This function should be overridden, as its implementation is very
         specific to the characteristics of the native model output.
         """
-        pass
+        raise NotImplementedError("model.ungeorectified_grid() must be overridden by subclass")
 
 
 def irregular_uv_to_speed_direction(u, v):
