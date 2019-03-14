@@ -21,7 +21,7 @@ from osgeo import gdal, osr, ogr
 from scipy.interpolate import griddata
 from shapely.geometry import shape
 
-from thyme.regulargrid import RegularGrid
+from thyme.grid.regulargrid import RegularGrid
 
 # Conversion factor for meters/sec to knots
 MS2KNOTS = 1.943844
