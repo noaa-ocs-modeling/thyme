@@ -59,7 +59,7 @@ class ModelIndexFile:
 
     Attributes:
         path: Path (relative or absolute) of the file..
-        nc_file: Handle to ``netCDF4.Dataset`` instance for the opened NetCDF
+        nc_file: Handle to `netCDF4.Dataset` instance for the opened NetCDF
             file.
         dim_x: Handle to x dimension.
         dim_y: Handle to y dimension.
@@ -103,7 +103,7 @@ class ModelIndexFile:
                 specified path, if any, will be deleted and the new file will
                 be opened in write mode.
         """
-        # nc_file: Handle to ``netCDF4.Dataset`` instance for the opened NetCDF
+        # nc_file: Handle to `netCDF4.Dataset` instance for the opened NetCDF
         if not os.path.exists(self.path) or clobber:
             self.nc_file = netCDF4.Dataset(self.path, 'w', format='NETCDF4')
         else:
@@ -201,7 +201,7 @@ class ModelIndexFile:
         """Initialize NetCDF dimensions/variables/attributes.
 
         Args:
-            model_file: ``ModelFile`` instance containing model output used
+            model_file: `ModelFile` instance containing model output used
                 to identify properties of original grid.
             target_cellsize_meters: Target cell size of grid cells, in meters.
                 Actual calculated x/y grid cell sizes will vary slightly from
@@ -310,7 +310,7 @@ class ModelIndexFile:
             does not include any grid polygons intersecting with given extent.
 
         Returns:
-            Instance of ``RegularGrid`` representing the extended generated
+            Instance of `RegularGrid` representing the extended generated
             grid whose extent matches the union of all intersecting subset grid
             polygons.
         """
@@ -432,7 +432,7 @@ class ModelIndexFile:
         """Create a shoreline mask for region of interest at target resolution.
         
         Args:
-            reg_grid: ``RegularGrid`` instance describing the regular grid for
+            reg_grid: `RegularGrid` instance describing the regular grid for
                 which the shoreline mask will be created.
             shoreline_shp: Path to a polygon shapefile containing features
                 identifying land areas.
@@ -518,9 +518,9 @@ class ModelIndexFile:
         model grid.
 
         Args:
-            model_file: ``ModelFile`` instance containing model native grid
+            model_file: `ModelFile` instance containing model native grid
                 structure variables.
-            reg_grid: ``RegularGrid`` instance describing the regular grid for
+            reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
 
         Raises:
@@ -535,16 +535,16 @@ class ModelIndexFile:
         This creates an in-memory representation 
 
         Args:
-            reg_grid: ``RegularGrid`` instance describing the regular grid for
+            reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
-            layer: ``osgeo.ogr.Layer`` instance containing polygon features
+            layer: `osgeo.ogr.Layer` instance containing polygon features
                 representing valid data areas. Should be derived from the
                 native model grid based on its characteristics (e.g. irregular
                 vs unstructured grid cells, internal model grid mask, etc.).
 
         Returns:
-            ``numpy`` ``int`` array, corresponding with specified
-            ``RegularGrid``, identifying valid and not-valid output grid cells.
+            `numpy` `int` array, corresponding with specified
+            `RegularGrid`, identifying valid and not-valid output grid cells.
             Valid cells are set to a value of ``1`` while invalid cells are set
             to ``0``.
         """
@@ -666,11 +666,11 @@ def irregular_uv_to_speed_direction(u, v):
     be converted to knots and direction in degrees from true north (0-360).
 
     Args:
-        u: ``numpy.ma.masked_array`` containing 1-dimension u values
-        v: ``numpy.ma.masked_array`` containing 1-dimension v values
+        u: `numpy.ma.masked_array` containing 1-dimension u values
+        v: `numpy.ma.masked_array` containing 1-dimension v values
 
     Returns:
-        One-tuple containing the 2D ``numpy.ma.masked_array``s for direction
+        One-tuple containing the 2D `numpy.ma.masked_array`s for direction
         and speed (in that order).
     """
     direction = numpy.ma.empty(v.shape, dtype=numpy.float32)
@@ -706,13 +706,13 @@ def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
     be converted to knots and direction in degrees from true north (0-360).
 
     Args:
-        reg_grid_u: ``numpy.ma.masked_array`` containing u values interpolated
+        reg_grid_u: `numpy.ma.masked_array` containing u values interpolated
             to the regular grid.
-        reg_grid_v: ``numpy.ma.masked_array`` containing v values interpolated
+        reg_grid_v: `numpy.ma.masked_array` containing v values interpolated
             to the regular grid.
 
     Returns:
-        Two-tuple containing the 2D ``numpy.ma.masked_array``s for direction
+        Two-tuple containing the 2D `numpy.ma.masked_array`s for direction
         and speed (in that order).
     """
     direction = numpy.ma.empty((reg_grid_u.shape[0], reg_grid_u.shape[1]), dtype=numpy.float32)
@@ -749,18 +749,18 @@ def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
 def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
     """Linear-interpolate irregularly-spaced u/v values to regular grid.
     
-    Uses ``scipy.interpolate.griddata`` for linear interpolation.
+    Uses `scipy.interpolate.griddata` for linear interpolation.
 
     Args:
-        u: ``numpy.ma.masked_array`` containing u values with NoData/land
+        u: `numpy.ma.masked_array` containing u values with NoData/land
             values masked out.
-        v: ``numpy.ma.masked_array`` containing v values with NoData/land
+        v: `numpy.ma.masked_array` containing v values with NoData/land
             values masked out.
-        lat: ``numpy.ndarray`` containing latitude positions of corresponding
+        lat: `numpy.ndarray` containing latitude positions of corresponding
             input u/v values.
-        lon: ``numpy.ndarray`` containing longitude positions of corresponding
+        lon: `numpy.ndarray` containing longitude positions of corresponding
             input u/v values
-        model_index: ``ModelIndexFile`` containing output regular grid
+        model_index: `ModelIndexFile` containing output regular grid
             definition.
     """
     # Using scipy to interpolate irregular spaced u/v points to a regular grid
@@ -775,18 +775,18 @@ def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
 def gdal_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
     """Linear-interpolate irregularly-spaced u/v values to regular grid.
 
-    Uses ``gdal.Grid`` for linear interpolation.
+    Uses `gdal.Grid` for linear interpolation.
 
     Args:
-        u: ``numpy.ma.masked_array`` containing u values with NoData/land
+        u: `numpy.ma.masked_array` containing u values with NoData/land
             values masked out.
-        v: ``numpy.ma.masked_array`` containing v values with NoData/land
+        v: `numpy.ma.masked_array` containing v values with NoData/land
             values masked out.
-        lat: ``numpy.ndarray`` containing latitude positions of corresponding
+        lat: `numpy.ndarray` containing latitude positions of corresponding
             input u/v values.
-        lon: ``numpy.ndarray`` containing longitude positions of corresponding
+        lon: `numpy.ndarray` containing longitude positions of corresponding
             input u/v values
-        model_index: ``ModelIndexFile`` containing output regular grid
+        model_index: `ModelIndexFile` containing output regular grid
             definition.
     """
     # Create an ogr object containing irregularly spaced points for u,v,lat,lon
