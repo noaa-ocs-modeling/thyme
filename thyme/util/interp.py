@@ -12,96 +12,103 @@ INTERP_METHOD_SCIPY = 'scipy'
 # Alternative method for horizontal interpolation
 INTERP_METHOD_GDAL = 'gdal'
 
-def interpolate_uv_to_regular_grid(u, v, lat, lon, model_index, interp_method=INTERP_METHOD_SCIPY):
-    """Linear-interpolate irregularly-spaced u/v values to regular grid.
+def interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out, interp_method=INTERP_METHOD_SCIPY):
+    """Linear-interpolate irregularly-spaced values to regular grid.
 
     Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land values
-            masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land values
-            masked out.
-        lat: `numpy.ndarray` containing latitude positions of corresponding
-            input u/v values.
-        lon: `numpy.ndarray` containing longitude positions of corresponding
-            input u/v values
-        model_index: `ModelIndexFile` containing output regular grid
-            definition.
+        values: `tuple` or `list` of `numpy.ma.masked_array`s containing values
+            to be interpolated to the output grid.
+        x_in: `numpy.ndarray` containing x-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        y_in: `numpy.ndarray` containing y-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        x_out: `numpy.ndarray` containing x-positions of output grid columns.
+        y_out: `numpy.ndarray` containing y-positions of output grid rows.
         interp_method: The desired interpolation method. Defaults to
             `INTERP_METHOD_SCIPY`.
+
+    Returns:
+        A `tuple` containing the interpolated values for each input array,
+        corresponding with the order specified in `values`.
     """
     if interp_method == INTERP_METHOD_SCIPY:
-        return scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index)
+        return scipy_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out)
     elif interp_method == INTERP_METHOD_GDAL:
-        return gdal_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index)
+        return gdal_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out)
 
     raise ValueError(f"Invalid interpolation method specified [{interp_method}]. Supported values: {INTERP_METHOD_SCIPY}, {INTERP_METHOD_GDAL}")
 
-def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Linear-interpolate irregularly-spaced u/v values to regular grid.
+def scipy_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out):
+    """Linear-interpolate irregularly-spaced values to regular grid.
     
     Uses `scipy.interpolate.griddata` for linear interpolation.
 
     Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land values
-            masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land values
-            masked out.
-        lat: `numpy.ndarray` containing latitude positions of corresponding
-            input u/v values.
-        lon: `numpy.ndarray` containing longitude positions of corresponding
-            input u/v values
-        model_index: `ModelIndexFile` containing output regular grid
-            definition.
+        values: `tuple` or `list` of `numpy.ma.masked_array`s containing values
+            to be interpolated to the output grid.
+        x_in: `numpy.ndarray` containing x-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        y_in: `numpy.ndarray` containing y-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        x_out: `numpy.ndarray` containing x-positions of output grid columns.
+        y_out: `numpy.ndarray` containing y-positions of output grid rows.
+
+    Returns:
+        A `tuple` containing the interpolated values for each input array,
+        corresponding with the order specified in `values`.
     """
-    x, y = numpy.meshgrid(model_index.var_x, model_index.var_y)
-    coords = numpy.column_stack((lon, lat))
-    reg_grid_u = griddata(coords, u, (x, y), method='linear')
-    reg_grid_v = griddata(coords, v, (x, y), method='linear')
+    x, y = numpy.meshgrid(x_out, y_out)
+    coords = numpy.column_stack((x_in, y_in))
+    calc_values = []
+    for value_array in values:
+        calc_values.append(griddata(coords, value_array, (x, y), method='linear'))
 
-    return reg_grid_u, reg_grid_v
+    return tuple(calc_values)
 
 
-def gdal_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Linear-interpolate irregularly-spaced u/v values to regular grid.
+def gdal_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out):
+    """Linear-interpolate irregularly-spaced values to regular grid.
 
     Uses `gdal.Grid` for linear interpolation.
 
     Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land values
-            masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land values
-            masked out.
-        lat: `numpy.ndarray` containing latitude positions of corresponding
-            input u/v values.
-        lon: `numpy.ndarray` containing longitude positions of corresponding
-            input u/v values
-        model_index: `ModelIndexFile` containing output regular grid
-            definition.
+        values: `tuple` or `list` of `numpy.ma.masked_array`s containing values
+            to be interpolated to the output grid.
+        x_in: `numpy.ndarray` containing x-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        y_in: `numpy.ndarray` containing y-position of each input value. Length
+            of this array must match the length of each array in `values`.
+        x_out: `numpy.ndarray` containing x-positions of output grid columns.
+        y_out: `numpy.ndarray` containing y-positions of output grid rows.
+
+    Returns:
+        A `tuple` containing the interpolated values for each input array,
+        corresponding with the order specified in `values`.
     """
     srs = osr.SpatialReference()
     srs.SetWellKnownGeogCS('WGS84')
     ds = gdal.GetDriverByName('Memory').Create('', 0, 0, 0, gdal.GDT_Float32)
     layer = ds.CreateLayer('irregular_points', srs=srs, geom_type=ogr.wkbPoint)
-    layer.CreateField(ogr.FieldDefn('u', ogr.OFTReal))
-    layer.CreateField(ogr.FieldDefn('v', ogr.OFTReal))
 
-    for i in range(len(v)):
+    field_name = lambda x: 'field_{}'.format(x)
+
+    for n in range(len(values)):
+        layer.CreateField(ogr.FieldDefn(field_name(n + 1), ogr.OFTReal))
+
+    for i in range(len(x_in)):
         point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint(lon[i], lat[i])
+        point.AddPoint(x_in[i], y_in[i])
         feature = ogr.Feature(layer.GetLayerDefn())
         feature.SetGeometry(point)
-        feature.SetField('u', u[i])
-        feature.SetField('v', v[i])
+        for n in range(len(values)):
+            layer.SetField(field_name(n + 1), values[n][i])
         layer.CreateFeature(feature)
 
-    # Input ogr object to gdal grid and interpolate irregularly spaced u/v
-    # to a regular grid
-    dst_u = gdal.Grid('u.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm='linear:nodata=0.0', zfield='u')
-    dst_v = gdal.Grid('v.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm='linear:nodata=0.0', zfield='v')
+    calc_values = []
+    for n in range(len(values)):
+        calc_values.append(
+            gdal.Grid('.tif'.format(field_name(n + 1)), ds, format='MEM',
+                      width=len(x_out), height=len(y_out),
+                      algorithm='linear:nodata=0.0', zfield=field_name(n + 1)).ReadAsArray())
 
-    reg_grid_u = dst_u.ReadAsArray()
-    reg_grid_v = dst_v.ReadAsArray()
-
-    return reg_grid_u, reg_grid_v
+    return tuple(calc_values)
