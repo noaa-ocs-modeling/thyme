@@ -18,7 +18,6 @@ import os
 import netCDF4
 import numpy
 from osgeo import gdal, osr, ogr
-from scipy.interpolate import griddata
 from shapely.geometry import shape
 
 from thyme.grid.regulargrid import RegularGrid
@@ -28,12 +27,6 @@ MS2KNOTS = 1.943844
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
-
-# Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = 'scipy'
-
-# Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = 'gdal'
 
 
 class ModelIndexFile:
@@ -642,7 +635,7 @@ class ModelFile:
     def get_vertical_coordinate_type(self):
         raise NotImplementedError("model.get_vertical_coordinate_type() must be overridden by subclass")
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=None):
+    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=None):
         """Interpolate u/v current velocity components to regular grid.
         
         This function should be overridden, as its implementation is very
@@ -746,76 +739,4 @@ def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
     return direction, speed
 
 
-def scipy_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Linear-interpolate irregularly-spaced u/v values to regular grid.
-    
-    Uses `scipy.interpolate.griddata` for linear interpolation.
-
-    Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land
-            values masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land
-            values masked out.
-        lat: `numpy.ndarray` containing latitude positions of corresponding
-            input u/v values.
-        lon: `numpy.ndarray` containing longitude positions of corresponding
-            input u/v values
-        model_index: `ModelIndexFile` containing output regular grid
-            definition.
-    """
-    # Using scipy to interpolate irregular spaced u/v points to a regular grid
-    x, y = numpy.meshgrid(model_index.var_x, model_index.var_y)
-    coords = numpy.column_stack((lon, lat))
-    reg_grid_u = griddata(coords, u, (x, y), method='linear')
-    reg_grid_v = griddata(coords, v, (x, y), method='linear')
-
-    return reg_grid_u, reg_grid_v
-
-
-def gdal_interpolate_uv_to_regular_grid(u, v, lat, lon, model_index):
-    """Linear-interpolate irregularly-spaced u/v values to regular grid.
-
-    Uses `gdal.Grid` for linear interpolation.
-
-    Args:
-        u: `numpy.ma.masked_array` containing u values with NoData/land
-            values masked out.
-        v: `numpy.ma.masked_array` containing v values with NoData/land
-            values masked out.
-        lat: `numpy.ndarray` containing latitude positions of corresponding
-            input u/v values.
-        lon: `numpy.ndarray` containing longitude positions of corresponding
-            input u/v values
-        model_index: `ModelIndexFile` containing output regular grid
-            definition.
-    """
-    # Create an ogr object containing irregularly spaced points for u,v,lat,lon
-    # and write to memory
-    srs = osr.SpatialReference()
-    srs.SetWellKnownGeogCS('WGS84')
-    ds = gdal.GetDriverByName('Memory').Create('', 0, 0, 0, gdal.GDT_Float32)
-    layer = ds.CreateLayer('irregular_points', srs=srs, geom_type=ogr.wkbPoint)
-    layer.CreateField(ogr.FieldDefn('u', ogr.OFTReal))
-    layer.CreateField(ogr.FieldDefn('v', ogr.OFTReal))
-
-    for i in range(len(v)):
-        point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint(lon[i], lat[i])
-        feature = ogr.Feature(layer.GetLayerDefn())
-        feature.SetGeometry(point)
-        feature.SetField('u', u[i])
-        feature.SetField('v', v[i])
-        layer.CreateFeature(feature)
-
-    # Input ogr object to gdal grid and interpolate irregularly spaced u/v
-    # to a regular grid
-    dst_u = gdal.Grid('u.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm='linear:nodata=0.0', zfield='u')
-    dst_v = gdal.Grid('v.tif', ds, format='MEM', width=model_index.dim_x.size, height=model_index.dim_y.size,
-                      algorithm='linear:nodata=0.0', zfield='v')
-
-    reg_grid_u = dst_u.ReadAsArray()
-    reg_grid_v = dst_v.ReadAsArray()
-
-    return reg_grid_u, reg_grid_v
 

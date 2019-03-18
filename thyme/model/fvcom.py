@@ -24,15 +24,10 @@ from osgeo import ogr, osr
 from scipy import interpolate
 
 from thyme.model import model
+from thyme.util import interp
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
-
-# Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = 'scipy'
-
-# Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = 'gdal'
 
 
 class FVCOMIndexFile(model.ModelIndexFile):
@@ -308,7 +303,7 @@ class FVCOMFile(model.ModelFile):
 
         return siglay_centroid, self.var_lat_centroid, self.var_lon_centroid, self.num_nele, self.num_siglay
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=model.INTERP_METHOD_SCIPY):
+    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
         h_centroid, zeta_centroid = node_to_centroid(self.var_zeta, self.var_h, self.var_lon_nodal, self.var_lat_nodal,
@@ -318,13 +313,8 @@ class FVCOMFile(model.ModelFile):
                                                                 model_index, self.num_nele, self.num_siglay, time_index,
                                                                 target_depth)
 
-        # Scipy interpolation is default method, change method parameter to change interpolation method
-        if interp == model.INTERP_METHOD_SCIPY:
-            return model.scipy_interpolate_uv_to_regular_grid(u_target_depth, v_target_depth, self.var_lat_centroid,
-                                                              self.var_lon_centroid, model_index)
-        elif interp == model.INTERP_METHOD_GDAL:
-            return model.gdal_interpolate_uv_to_regular_grid(u_target_depth, v_target_depth, self.var_lat_centroid,
-                                                             self.var_lon_centroid, model_index)
+        return interp.interpolate_uv_to_regular_grid(u_target_depth, v_target_depth, self.var_lat_centroid,
+                                                             self.var_lon_centroid, model_index, interp_method=interp_method)
 
 
 def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, time_index, target_depth):
