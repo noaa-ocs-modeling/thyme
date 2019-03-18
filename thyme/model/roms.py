@@ -21,15 +21,10 @@ from osgeo import ogr, osr
 from scipy import interpolate
 
 from thyme.model import model
+from thyme.util import interp
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
-
-# Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = 'scipy'
-
-# Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = 'gdal'
 
 
 class ROMSIndexFile(model.ModelIndexFile):
@@ -231,7 +226,7 @@ class ROMSFile(model.ModelFile):
         if self.nc_file.variables['s_rho'].positive == 'down':
             self.var_s_rho = self.var_s_rho * -1
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=INTERP_METHOD_SCIPY):
+    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate averaged, rotated u/v to a regular grid"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_s_rho,
@@ -252,13 +247,8 @@ class ROMSFile(model.ModelFile):
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(rot_u_rho, rot_v_rho,
                                                                                         water_lat_rho, water_lon_rho)
 
-        # Scipy interpolation is default method, change method parameter to change interpolation method
-        if interp == INTERP_METHOD_SCIPY:
-            return model.scipy_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed,
-                                                              lon_compressed, model_index)
-        elif interp == INTERP_METHOD_GDAL:
-            return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed,
-                                                             model_index)
+        return interp.interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed,
+                                                              lon_compressed, model_index, interp_method=interp_method)
 
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids"""

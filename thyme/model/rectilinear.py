@@ -13,15 +13,10 @@ import numpy
 from osgeo import ogr, osr
 
 from thyme.model import model
+from thyme.util import interp
 
 # Default fill value for NetCDF variables
 FILLVALUE = -9999.0
-
-# Default module for horizontal interpolation
-INTERP_METHOD_SCIPY = 'scipy'
-
-# Alternative module for horizontal interpolation
-INTERP_METHOD_GDAL = 'gdal'
 
 
 class RectilinearIndexFile(model.ModelIndexFile):
@@ -207,16 +202,12 @@ class RectilinearFile(model.ModelFile):
 
             self.datetime_values.append(adjusted_time)
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp=INTERP_METHOD_SCIPY):
+    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
 
-        # Scipy interpolation is default method, change method parameter to change interpolation method
-        if interp == model.INTERP_METHOD_SCIPY:
-            return model.scipy_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
-        elif interp == model.INTERP_METHOD_GDAL:
-            return model.gdal_interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index)
+        return interp.interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index, interp_method=interp_method)
 
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids"""
