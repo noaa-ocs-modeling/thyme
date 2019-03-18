@@ -247,8 +247,10 @@ class ROMSFile(model.ModelFile):
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(rot_u_rho, rot_v_rho,
                                                                                         water_lat_rho, water_lon_rho)
 
-        return interp.interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed,
-                                                              lon_compressed, model_index, interp_method=interp_method)
+        return interp.interpolate_to_regular_grid((u_compressed, v_compressed),
+                                                  lon_compressed, lat_compressed,
+                                                  model_index.var_x, model_index.var_y,
+                                                  interp_method=interp_method)
 
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids"""

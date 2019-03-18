@@ -207,7 +207,10 @@ class RectilinearFile(model.ModelFile):
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
 
-        return interp.interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index, interp_method=interp_method)
+        return interp.interpolate_to_regular_grid((u_compressed, v_compressed),
+                                                  lon_compressed, lat_compressed,
+                                                  model_index.var_x, model_index.var_y,
+                                                  interp_method=interp_method)
 
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids"""

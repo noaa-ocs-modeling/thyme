@@ -220,7 +220,10 @@ class HYCOMFile(model.ModelFile):
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(u_target_depth, v_target_depth, self.var_lat, self.var_lon, self.var_mask)
 
-        return interp.interpolate_uv_to_regular_grid(u_compressed, v_compressed, lat_compressed, lon_compressed, model_index, interp_method=interp_method)
+        return interp.interpolate_to_regular_grid((u_compressed, v_compressed),
+                                                  lon_compressed, lat_compressed,
+                                                  model_index.var_x, model_index.var_y,
+                                                  interp_method=interp_method)
         
     def ungeorectified_grid(self, time_index, target_depth):
         """Process ungeorectified grids"""

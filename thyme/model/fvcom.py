@@ -313,8 +313,10 @@ class FVCOMFile(model.ModelFile):
                                                                 model_index, self.num_nele, self.num_siglay, time_index,
                                                                 target_depth)
 
-        return interp.interpolate_uv_to_regular_grid(u_target_depth, v_target_depth, self.var_lat_centroid,
-                                                             self.var_lon_centroid, model_index, interp_method=interp_method)
+        return interp.interpolate_to_regular_grid((u_target_depth, v_target_depth),
+                                                  self.var_lon_centroid, self.var_lat_centroid,
+                                                  model_index.var_x, model_index.var_y,
+                                                  interp_method=interp_method)
 
 
 def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, time_index, target_depth):
