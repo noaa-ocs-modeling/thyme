@@ -186,7 +186,6 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
-        self.var_datetime = None
         self.datetime_values = None
 
     def release_resources(self):
@@ -210,7 +209,6 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
-        self.var_datetime = None
         self.datetime_values = None
 
     def get_valid_extent(self):
@@ -249,16 +247,16 @@ class FVCOMFile(model.ModelFile):
         self.num_times = self.nc_file.dimensions['time'].size
 
         # Convert timestamp to datetime object
+        datetimes = netCDF4.num2date(self.var_time, units=self.time_units)
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
-            print(self.var_datetime)
-            if self.var_datetime.minute >= 30:
+            dt = datetimes[time_index]
+            if dt.minute >= 30:
                 # round up
-                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif self.var_datetime.minute < 30:
+                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0) + datetime.timedelta(hours=1)
+            elif dt.minute < 30:
                 # round down
-                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0)
+                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0)
 
             self.datetime_values.append(adjusted_time)
 

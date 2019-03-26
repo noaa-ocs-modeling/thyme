@@ -122,7 +122,6 @@ class RectilinearFile(model.ModelFile):
         self.var_depth = None
         self.var_time = None
         self.time_units = None
-        self.var_datetime = None
         self.datetime_values = None
         self.var_mask = None
         self.num_x = None
@@ -141,7 +140,6 @@ class RectilinearFile(model.ModelFile):
         self.var_depth = None
         self.var_time = None
         self.time_units = None
-        self.var_datetime = None
         self.datetime_values = None
         self.var_mask = None
         self.num_x = None
@@ -179,15 +177,16 @@ class RectilinearFile(model.ModelFile):
 
         # Convert timestamps to datetime objects and store in a list
         # Rounding to the nearest hour
+        datetimes = netCDF4.num2date(self.var_time, units=self.time_units)
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units)[time_index]
-            if self.var_datetime.minute >= 30:
+            dt = datetimes[time_index]
+            if dt.minute >= 30:
                 # round up
-                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif self.var_datetime.minute < 30:
+                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0) + datetime.timedelta(hours=1)
+            elif dt.minute < 30:
                 # round down
-                adjusted_time = datetime.datetime(self.var_datetime.year, self.var_datetime.month, self.var_datetime.day, self.var_datetime.hour, 0, 0)
+                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0)
 
             self.datetime_values.append(adjusted_time)
 
