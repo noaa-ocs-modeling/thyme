@@ -141,7 +141,6 @@ class ROMSFile(model.ModelFile):
         self.num_xi = None
         self.num_sigma = None
         self.num_times = None
-        self.var_datetime = None
         self.datetime_values = None
 
     def release_resources(self):
@@ -166,7 +165,6 @@ class ROMSFile(model.ModelFile):
         self.num_xi = None
         self.num_sigma = None
         self.num_times = None
-        self.var_datetime = None
         self.datetime_values = None
 
     def get_valid_extent(self):
@@ -214,10 +212,10 @@ class ROMSFile(model.ModelFile):
         self.num_times = self.nc_file.dimensions['ocean_time'].size
 
         # Convert gregorian timestamp to datetime object
+        datetimes = netCDF4.num2date(self.var_time, units=self.time_units, calendar='proleptic_gregorian')
         self.datetime_values = []
         for time_index in range(self.num_times):
-            self.var_datetime = netCDF4.num2date(self.var_time, units=self.time_units, calendar='proleptic_gregorian')[time_index]
-            self.datetime_values.append(self.var_datetime)
+            self.datetime_values.append(datetimes[time_index])
 
         # Determine if sigma values are positive up or down from netCDF metadata
         if self.nc_file.variables['s_rho'].positive == 'down':
