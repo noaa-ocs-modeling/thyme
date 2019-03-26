@@ -48,7 +48,7 @@ class RectilinearIndexFile(model.ModelIndexFile):
         """Create model domain mask and write to index file.
 
         Args:
-            model_file: `RECTILINEAROutputFile` instance containing rectlinear
+            model_file: `RectilinearOutputFile` instance containing rectlinear
                 grid structure and variables.
             reg_grid: `RegularGrid` instance describing the regular grid for
                 which the mask will be created.
