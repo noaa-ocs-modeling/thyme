@@ -73,14 +73,6 @@ class HYCOMIndexFile(model.ModelIndexFile):
         # searching counter clockwise(eta1, xi), (eta2, xi2), (eta3, xi3),(eta4, xi4)
         for nx1 in range(model_file.num_x-1):
             for ny1 in range(model_file.num_y-1):
-                if nx1 == 0:
-                    continue
-                if ny1 == 0:
-                    continue
-                if ny1 == model_file.num_y-1:
-                    continue
-                if nx1 == model_file.num_x-1:
-                    continue
                 nx2 = nx1 + 1
                 ny2 = ny1
                 nx3 = nx1 + 1
