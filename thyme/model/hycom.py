@@ -193,7 +193,7 @@ class HYCOMFile(model.ModelFile):
         # Use the surface layer in the u variable to define a land mask
         # Assuming this mask is sufficient for all variables, this may
         # not be the case for all hycom models
-        self.var_mask = self.nc_file.variables['u'][0, 0, :, :]
+        self.var_mask = self.var_u[0, 0, :, :]
 
         # Convert timestamps to datetime objects and store in a list
         # Rounding to the nearest hour
