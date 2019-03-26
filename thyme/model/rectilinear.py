@@ -173,8 +173,8 @@ class RectilinearFile(model.ModelFile):
         self.num_y = self.nc_file.dimensions['Y'].size
 
         # Use the surface layer in the u variable to define a land mask
-        mask_u = self.nc_file.variables['u'][0, 0, :, :]
-        mask_v = self.nc_file.variables['v'][0, 0, :, :]
+        mask_u = self.var_u[0, 0, :, :]
+        mask_v = self.var_v[0, 0, :, :]
         self.var_mask = numpy.ma.mask_or(mask_u.mask, mask_v.mask)
 
         # Convert timestamps to datetime objects and store in a list
