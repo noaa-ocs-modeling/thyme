@@ -172,14 +172,16 @@ class POMFile(model.ModelFile):
         path: Path (relative or absolute) of the file.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, datetime_rounding=None):
         """Initialize POM file object and open file at specified path.
 
         Args:
             path: Path of target NetCDF file.
-
+            datetime_rounding: The `dateutil.DatetimeRounding` constant
+                representing how date/time values should be rounded, or None if
+                no rounding should occur.
         """
-        super().__init__(path)
+        super().__init__(path, datetime_rounding=datetime_rounding)
         self.var_lat = None
         self.var_lon = None
         self.var_u = None
@@ -244,20 +246,7 @@ class POMFile(model.ModelFile):
         self.num_nx = self.nc_file.dimensions['nx'].size
         self.num_times = self.nc_file.dimensions['time'].size
 
-        # Convert timestamps to datetime objects and store in a list
-        # Rounding to the nearest hour
-        datetimes = netCDF4.num2date(self.var_time, units=self.time_units)
-        self.datetime_values = []
-        for time_index in range(self.num_times):
-            dt = datetimes[time_index]
-            if dt.minute >= 30:
-                # round up
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif dt.minute < 30:
-                # round down
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0)
-
-            self.datetime_values.append(adjusted_time)
+        self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units))
 
         # Determine if sigma values are positive up or down from netCDF metadata
         if self.nc_file.variables['sigma'].positive == 'down':

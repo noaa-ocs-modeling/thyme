@@ -21,6 +21,7 @@ from osgeo import gdal, osr, ogr
 from shapely.geometry import shape
 
 from thyme.grid.regulargrid import RegularGrid
+from thyme.util import dateutil
 
 # Conversion factor for meters/sec to knots
 MS2KNOTS = 1.943844
@@ -597,13 +598,18 @@ class ModelFile:
     Opens a NetCDF model file, reads variables, gets model domain extent,
     converts values, and interpolates model variables to a regular grid.
     """
-    def __init__(self, path):
+    def __init__(self, path, datetime_rounding=None):
         """Initialize model file object and opens file at specified path.
 
         Args:
             path: Path of target NetCDF file.
+            datetime_rounding: The `dateutil.DatetimeRounding` constant
+                representing how date/time values should be rounded, or None if
+                no rounding should occur.
         """
         self.path = path
+        self.datetime_rounding = datetime_rounding
+        self.datetime_values = None
         self.nc_file = None
 
     def open(self):
@@ -636,6 +642,16 @@ class ModelFile:
 
     def get_vertical_coordinate_type(self):
         raise NotImplementedError("model.get_vertical_coordinate_type() must be overridden by subclass")
+
+    def update_datetime_values(self, datetimes):
+        """Update datetime values, rounding them if configured to do so.
+
+        Args:
+            datetimes: List of new, unrounded `datetime` values.
+        """
+        self.datetime_values = []
+        for i in range(len(datetimes)):
+            self.datetime_values.append(dateutil.round(datetimes[i], self.datetime_rounding))
 
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=None):
         """Interpolate u/v current velocity components to regular grid.
