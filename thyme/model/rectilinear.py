@@ -104,14 +104,16 @@ class RectilinearFile(model.ModelFile):
         path: Path (relative or absolute) of the file.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, datetime_rounding=None):
         """Initialize rectilinear file object and open file at specified path.
 
         Args:
             path: Path of target NetCDF file.
-
+            datetime_rounding: The `dateutil.DatetimeRounding` constant
+                representing how date/time values should be rounded, or None if
+                no rounding should occur.
         """
-        super().__init__(path)
+        super().__init__(path, datetime_rounding=datetime_rounding)
         self.var_lat = None
         self.var_lon = None
         self.var_u = None
@@ -175,20 +177,7 @@ class RectilinearFile(model.ModelFile):
         mask_v = self.var_v[0, 0, :, :]
         self.var_mask = numpy.ma.mask_or(mask_u.mask, mask_v.mask)
 
-        # Convert timestamps to datetime objects and store in a list
-        # Rounding to the nearest hour
-        datetimes = netCDF4.num2date(self.var_time, units=self.time_units)
-        self.datetime_values = []
-        for time_index in range(self.num_times):
-            dt = datetimes[time_index]
-            if dt.minute >= 30:
-                # round up
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif dt.minute < 30:
-                # round down
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0)
-
-            self.datetime_values.append(adjusted_time)
+        self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units))
 
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""

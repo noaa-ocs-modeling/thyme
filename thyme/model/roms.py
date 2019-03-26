@@ -114,13 +114,16 @@ class ROMSFile(model.ModelFile):
     Attributes:
         path: Path (relative or absolute) of the file.
     """
-    def __init__(self, path):
+    def __init__(self, path, datetime_rounding=None):
         """Initialize ROMS file object and open file at specified path.
 
         Args:
             path: Path of target NetCDF file.
+            datetime_rounding: The `dateutil.DatetimeRounding` constant
+                representing how date/time values should be rounded, or None if
+                no rounding should occur.
         """
-        super().__init__(path)
+        super().__init__(path, datetime_rounding=datetime_rounding)
         self.var_ang_rho = None
         self.var_lat_rho = None
         self.var_lon_rho = None
@@ -211,11 +214,7 @@ class ROMSFile(model.ModelFile):
         self.num_sigma = self.nc_file.dimensions['s_rho'].size
         self.num_times = self.nc_file.dimensions['ocean_time'].size
 
-        # Convert gregorian timestamp to datetime object
-        datetimes = netCDF4.num2date(self.var_time, units=self.time_units, calendar='proleptic_gregorian')
-        self.datetime_values = []
-        for time_index in range(self.num_times):
-            self.datetime_values.append(datetimes[time_index])
+        self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units, calendar='proleptic_gregorian'))
 
         # Determine if sigma values are positive up or down from netCDF metadata
         if self.nc_file.variables['s_rho'].positive == 'down':

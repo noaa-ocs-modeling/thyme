@@ -157,15 +157,18 @@ class FVCOMFile(model.ModelFile):
 
     Attributes:
         path: Path (relative or absolute) of the file.
+        lon_offset: Offset value to be added to longitude coordinates.
     """
-    def __init__(self, path, lon_offset=-360):
+    def __init__(self, path, lon_offset=-360, datetime_rounding=None):
         """Initialize FVCOM file object and open file at specified path.
 
         Args:
             path: Path of target NetCDF file.
-
+            datetime_rounding: The `dateutil.DatetimeRounding` constant
+                representing how date/time values should be rounded, or None if
+                no rounding should occur.
         """
-        super().__init__(path)
+        super().__init__(path, datetime_rounding=datetime_rounding)
         self.lon_offset = lon_offset
         self.var_lat_nodal = None
         self.var_lon_nodal = None
@@ -177,6 +180,7 @@ class FVCOMFile(model.ModelFile):
         self.var_h = None
         self.var_nv = None
         self.var_wet_cells = None
+        self.datetime_values = None
         self.var_time = None
         self.time_units = None
         self.var_siglay = None
@@ -186,7 +190,6 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
-        self.datetime_values = None
 
     def release_resources(self):
         """Allow GC to reclaim memory by releasing/deleting resources."""
@@ -200,6 +203,7 @@ class FVCOMFile(model.ModelFile):
         self.var_h = None
         self.var_nv = None
         self.var_wet_cells = None
+        self.datetime_values = None
         self.var_time = None
         self.time_units = None
         self.var_siglay = None
@@ -209,7 +213,6 @@ class FVCOMFile(model.ModelFile):
         self.num_nele = None
         self.num_node = None
         self.num_times = None
-        self.datetime_values = None
 
     def get_valid_extent(self):
         """Masked model domain extent."""
@@ -246,19 +249,7 @@ class FVCOMFile(model.ModelFile):
         self.num_siglev = self.nc_file.dimensions['siglev'].size
         self.num_times = self.nc_file.dimensions['time'].size
 
-        # Convert timestamp to datetime object
-        datetimes = netCDF4.num2date(self.var_time, units=self.time_units)
-        self.datetime_values = []
-        for time_index in range(self.num_times):
-            dt = datetimes[time_index]
-            if dt.minute >= 30:
-                # round up
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0) + datetime.timedelta(hours=1)
-            elif dt.minute < 30:
-                # round down
-                adjusted_time = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, 0, 0)
-
-            self.datetime_values.append(adjusted_time)
+        self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units))
 
         # Determine if sigma values are positive up or down from netCDF metadata
         if self.nc_file.variables['siglay'].positive == 'down':
