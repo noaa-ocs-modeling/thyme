@@ -620,10 +620,12 @@ class ModelFile:
             raise(Exception('NetCDF file does not exist: {}'.format(self.path)))
 
     def close(self):
-        """Close the model output file."""
+        """Close the model output file & release resources."""
         self.nc_file.close()
+        self.release_resources()
 
     def release_resources(self):
+        """Allow GC to reclaim memory by releasing/deleting resources."""
         raise NotImplementedError("model.release_resources() must be overridden by subclass")
 
     def get_valid_extent(self):

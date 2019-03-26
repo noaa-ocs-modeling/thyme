@@ -129,11 +129,8 @@ class RectilinearFile(model.ModelFile):
         self.num_y = None
         self.num_times = None
 
-    def close(self):
-        super().close()
-        self.release_resources()
-
     def release_resources(self):
+        """Allow GC to reclaim memory by releasing/deleting resources."""
         self.var_lat = None
         self.var_lon = None
         self.var_u = None
