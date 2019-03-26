@@ -246,8 +246,8 @@ class ROMSFile(model.ModelFile):
                                                   model_index.var_x, model_index.var_y,
                                                   interp_method=interp_method)
 
-    def ungeorectified_grid(self, time_index, target_depth):
-        """Process ungeorectified grids"""
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_s_rho,
                                                                 self.var_mask_rho, self.var_mask_u, self.var_mask_v,

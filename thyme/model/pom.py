@@ -264,8 +264,8 @@ class POMFile(model.ModelFile):
                                                   model_index.var_x, model_index.var_y,
                                                   interp_method=interp_method)
 
-    def ungeorectified_grid(self, time_index, target_depth):
-        """Process ungeorectified grids"""
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_mask, self.var_zeta, self.var_depth, self.var_sigma, self.num_sigma, self.num_ny, self.num_nx, time_index, target_depth)
 

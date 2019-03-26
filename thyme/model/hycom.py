@@ -209,8 +209,8 @@ class HYCOMFile(model.ModelFile):
                                                   model_index.var_x, model_index.var_y,
                                                   interp_method=interp_method)
         
-    def ungeorectified_grid(self, time_index, target_depth):
-        """Process ungeorectified grids"""
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_depth, self.num_x, self.num_y, time_index, target_depth)
 
