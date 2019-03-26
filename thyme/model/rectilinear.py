@@ -189,8 +189,8 @@ class RectilinearFile(model.ModelFile):
                                                   model_index.var_x, model_index.var_y,
                                                   interp_method=interp_method)
 
-    def ungeorectified_grid(self, time_index, target_depth):
-        """Process ungeorectified grids"""
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates"""
 
         u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
 

@@ -661,13 +661,13 @@ class ModelFile:
         """
         raise NotImplementedError("model.uv_to_regular_grid() must be overridden by subclass")
 
-    def ungeorectified_grid(self, time_index, target_depth):
-        """Process ungeorectified grids.
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates
 
         This function should be overridden, as its implementation is very
         specific to the characteristics of the native model output.
         """
-        raise NotImplementedError("model.ungeorectified_grid() must be overridden by subclass")
+        raise NotImplementedError("model.output_native_grid() must be overridden by subclass")
 
 
 def irregular_uv_to_speed_direction(u, v):
