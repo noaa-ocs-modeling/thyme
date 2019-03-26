@@ -189,11 +189,8 @@ class FVCOMFile(model.ModelFile):
         self.var_datetime = None
         self.datetime_values = None
 
-    def close(self):
-        super().close()
-        self.release_resources()
-
     def release_resources(self):
+        """Allow GC to reclaim memory by releasing/deleting resources."""
         self.var_lat_nodal = None
         self.var_lon_nodal = None
         self.var_lat_centroid = None
