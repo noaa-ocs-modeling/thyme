@@ -707,7 +707,7 @@ def irregular_uv_to_speed_direction(u, v):
         direction[i] = current_direction_north
         speed[i] = current_speed
 
-    return direction, speed
+    return speed, direction
 
 
 def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
@@ -754,7 +754,7 @@ def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
             direction[y, x] = current_direction_north
             speed[y, x] = current_speed
 
-    return direction, speed
+    return speed, direction
 
 
 
