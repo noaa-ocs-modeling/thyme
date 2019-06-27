@@ -54,7 +54,7 @@ class FVCOMIndexFile(model.ModelIndexFile):
     def __init__(self, path):
         super().__init__(path)
 
-    def init_nc(self, model_file, target_cellsize_meters, ofs_model, model_type, shoreline_shp=None, subset_grid_shp=None, subset_grid_field_name=None):
+    def init_nc(self, model_file, target_cellsize_meters, ofs_model, shoreline_shp=None, subset_grid_shp=None, subset_grid_field_name=None):
         """Initialize NetCDF dimensions/variables/attributes.
 
         Args:
@@ -68,7 +68,6 @@ class FVCOMIndexFile(model.ModelIndexFile):
                 grid cells in the x and y directions within the calculated grid
                 extent.
             ofs_model: The target model identifier.
-            model_type: The target model type.
             shoreline_shp: (Optional, default None) Path to a polygon shapefile
                 containing features identifying land areas. If specified,
                 a shoreline mask variable will be created/populated.
@@ -81,7 +80,7 @@ class FVCOMIndexFile(model.ModelIndexFile):
             subset_grid_field_name: (Optional, default None) Shapefile
                 field name to be stored in the index file.
         """
-        super().init_nc(model_file, target_cellsize_meters, ofs_model, model_type, shoreline_shp, subset_grid_shp, subset_grid_field_name)
+        super().init_nc(model_file, target_cellsize_meters, ofs_model, shoreline_shp, subset_grid_shp, subset_grid_field_name)
         # Determine vertical coordinate type
         (vertical_coordinates) = model_file.get_vertical_coordinate_type()
         self.nc_file.modelVerticalCoordinates = vertical_coordinates

@@ -12,7 +12,6 @@ involved with many of the processing steps are highly dependent on the
 characteristics of the target hydrodynamic model.
 """
 import json
-import math
 import os
 
 import netCDF4
@@ -110,6 +109,7 @@ class ModelIndexFile:
 
     def init_handles(self):
         """Initialize handles to NetCDF dimensions/variables."""
+
         self.dim_y = self.nc_file.dimensions[self.DIMNAME_Y]
         self.dim_x = self.nc_file.dimensions[self.DIMNAME_X]
 
@@ -191,7 +191,7 @@ class ModelIndexFile:
         if subset_grid_field_name is not None:
             self.var_subgrid_name = self.nc_file.createVariable('subgrid_name', 'S30', (self.DIMNAME_SUBGRID,), fill_value=FILLVALUE)
 
-    def init_nc(self, model_file, target_cellsize_meters, ofs_model, model_type, shoreline_shp=None, subset_grid_shp=None, subset_grid_field_name=None):
+    def init_nc(self, model_file, target_cellsize_meters, ofs_model, shoreline_shp=None, subset_grid_shp=None, subset_grid_field_name=None):
         """Initialize NetCDF dimensions/variables/attributes.
 
         Args:
@@ -205,7 +205,6 @@ class ModelIndexFile:
                 grid cells in the x and y directions within the calculated grid
                 extent.
             ofs_model: The target model identifier.
-            model_type: The target model type.
             shoreline_shp: (Optional, default None) Path to a polygon shapefile
                 containing features identifying land areas. If specified,
                 a shoreline mask variable will be created/populated.
@@ -687,20 +686,18 @@ def irregular_uv_to_speed_direction(u, v):
     direction = numpy.ma.empty(v.shape, dtype=numpy.float32)
     speed = numpy.ma.empty(u.shape, dtype=numpy.float32)
 
-    for i in range(u.shape[0]):
+    for i in numpy.ndindex(speed.shape):
         u_ms = u[i]
         v_ms = v[i]
 
-        # Convert from meters per second to knots
         u_knot = u_ms * MS2KNOTS
         v_knot = v_ms * MS2KNOTS
 
-        current_speed = math.sqrt(math.pow(u_knot, 2) + math.pow(v_knot, 2))
-        current_direction_radians = math.atan2(v_knot, u_knot)
-        current_direction_degrees = math.degrees(current_direction_radians)
+        current_speed = numpy.sqrt(u_knot**2 + v_knot**2)
+        current_direction_radians = numpy.arctan2(v_knot, u_knot)
+        current_direction_degrees = numpy.degrees(current_direction_radians)
         current_direction_north = 90.0 - current_direction_degrees
 
-        # The direction must always be positive.
         if current_direction_north < 0.0:
             current_direction_north += 360.0
 
@@ -726,33 +723,31 @@ def regular_uv_to_speed_direction(reg_grid_u, reg_grid_v):
         Two-tuple containing the 2D `numpy.ma.masked_array`s for direction
         and speed (in that order).
     """
-    direction = numpy.ma.empty((reg_grid_u.shape[0], reg_grid_u.shape[1]), dtype=numpy.float32)
-    speed = numpy.ma.empty((reg_grid_u.shape[0], reg_grid_u.shape[1]), dtype=numpy.float32)
-    for y in range(reg_grid_u.shape[0]):
-        for x in range(reg_grid_u.shape[1]):
-            if reg_grid_u.mask[y, x]:
-                direction[y, x] = numpy.nan
-                speed[y, x] = numpy.nan
-                continue
+    direction = numpy.ma.empty(reg_grid_v.shape, dtype=numpy.float32)
+    speed = numpy.ma.empty(reg_grid_u.shape, dtype=numpy.float32)
 
-            u_ms = reg_grid_u[y, x]
-            v_ms = reg_grid_v[y, x]
+    for y, x in numpy.ndindex(speed.shape):
+        if reg_grid_u.mask[y, x]:
+            direction[y, x] = numpy.nan
+            speed[y, x] = numpy.nan
+            continue
 
-            # Convert from meters per second to knots
-            u_knot = u_ms * MS2KNOTS
-            v_knot = v_ms * MS2KNOTS
+        u_ms = reg_grid_u[y, x]
+        v_ms = reg_grid_v[y, x]
 
-            current_speed = math.sqrt(math.pow(u_knot, 2) + math.pow(v_knot, 2))
-            current_direction_radians = math.atan2(v_knot, u_knot)
-            current_direction_degrees = math.degrees(current_direction_radians)
-            current_direction_north = 90.0 - current_direction_degrees
+        u_knot = u_ms * MS2KNOTS
+        v_knot = v_ms * MS2KNOTS
 
-            # The direction must always be positive.
-            if current_direction_north < 0.0:
-                current_direction_north += 360.0
+        current_speed = numpy.sqrt(u_knot**2 + v_knot**2)
+        current_direction_radians = numpy.arctan2(v_knot, u_knot)
+        current_direction_degrees = numpy.degrees(current_direction_radians)
+        current_direction_north = 90.0 - current_direction_degrees
 
-            direction[y, x] = current_direction_north
-            speed[y, x] = current_speed
+        if current_direction_north < 0.0:
+            current_direction_north += 360.0
+
+        direction[y, x] = current_direction_north
+        speed[y, x] = current_speed
 
     return speed, direction
 
