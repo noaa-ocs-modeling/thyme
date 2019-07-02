@@ -19,7 +19,8 @@ setuptools.setup(
     long_description=long_description,
     url='',
     packages=setuptools.find_packages(),
-    install_requires=['gdal', 'netCDF4', 'numpy', 'scipy', 'shapely'],
+    setup_requires=['numpy'],
+    install_requires=['shapely', 'numpy', 'scipy', 'netCDF4', 'gdal'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Intended Audience :: Science/Research',
