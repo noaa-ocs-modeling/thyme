@@ -224,8 +224,9 @@ class ModelIndexFile:
         self.nc_file.model = str.upper(ofs_model)
         self.nc_file.format = 'NetCDF-4'
 
-        shoreline_path, shoreline = os.path.split(shoreline_shp)
-        self.nc_file.shoreline = str(shoreline)
+        if shoreline_shp is not None:
+            shoreline_path, shoreline = os.path.split(shoreline_shp)
+            self.nc_file.shoreline = str(shoreline)
 
         if subset_grid_shp is not None:
             subgrid_path, subset_grid = os.path.split(subset_grid_shp)
@@ -581,7 +582,7 @@ class ModelIndexFile:
         # Write mask to index file
         for y in range(self.dim_y.size):
             for x in range(self.dim_x.size):
-                if land_mask[y, x] != 0:
+                if land_mask is not None and land_mask[y, x] != 0:
                     continue
                 if grid_cell_mask[y, x] == 1:
                     self.var_mask[y, x] = 1
