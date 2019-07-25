@@ -194,7 +194,13 @@ defining land areas to be masked:
 from thyme.model import fvcom
 native_model_file = fvcom.FVCOMFile('/path/to/existing_fvcom_file.nc')
 model_index_file = fvcom.FVCOMIndexFile('/path/to/new_index_file.nc')
-model_index_file.init_nc(native_model_file, 500, 'my_fvcom_model', '/path/to/shoreline_shapefile.shp')
+try:
+  native_model_file.open()
+  model_index_file.open()
+  model_index_file.init_nc(native_model_file, 500, 'my_fvcom_model', '/path/to/shoreline_shapefile.shp')
+finally:
+  model_index_file.close()
+  native_model_file.close()
 ```
 
 To generate a new index file for a ROMS-based model using a subgrid
@@ -205,7 +211,13 @@ shapefile (with fieldname \'id\' used to identify subgrid areas) and a
 from thyme.model import roms
 native_model_file = roms.ROMSFile('/path/to/existing_roms_file.nc')
 model_index_file = roms.ROMSIndexFile('/path/to/new_index_file.nc')
-model_index_file.init_nc(native_model_file, 300, 'my_roms_model', None, '/path/to/subgrid_shapefile.shp', 'subgrid_id_fieldname')
+try:
+  native_model_file.open()
+  model_index_file.open()
+  model_index_file.init_nc(native_model_file, 300, 'my_roms_model', None, '/path/to/subgrid_shapefile.shp', 'subgrid_id_fieldname')
+finally:
+  model_index_file.close()
+  native_model_file.close()
 ```
 
 To interpolate u/v current components from a ROMS-based model to a
@@ -217,7 +229,14 @@ values in two [numpy.ma.masked\_array]{.title-ref} objects:
 from thyme.model import roms
 native_model_file = roms.ROMSFile('/path/to/existing_roms_file.nc')
 model_index_file = roms.ROMSIndexFile('/path/to/existing_index_file.nc')
-(u_with_mask, v_with_mask) = native_model_file.uv_to_regular_grid(model_index_file, 0, 4.5)
+try:
+  native_model_file.open()
+  model_index_file.open()
+  (u_with_mask, v_with_mask) = native_model_file.uv_to_regular_grid(model_index_file, 0, 4.5)
+  # u_with_mask and v_with_mask now contain 2D numpy masked arrays
+finally:
+  model_index_file.close()
+  native_model_file.close()
 ```
 
 Authors
