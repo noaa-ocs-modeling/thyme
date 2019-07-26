@@ -190,7 +190,7 @@ To generate a new index file for an FVCOM-based model using the default
 grid extent, a \~500 meter target resolution, and a shoreline shapefile
 defining land areas to be masked:
 
-``` {.python}
+```python
 from thyme.model import fvcom
 native_model_file = fvcom.FVCOMFile('/path/to/existing_fvcom_file.nc')
 model_index_file = fvcom.FVCOMIndexFile('/path/to/new_index_file.nc')
@@ -204,10 +204,10 @@ finally:
 ```
 
 To generate a new index file for a ROMS-based model using a subgrid
-shapefile (with fieldname \'id\' used to identify subgrid areas) and a
+shapefile (with fieldname 'id' used to identify subgrid areas) and a
 \~300m target resolution (with no shoreline mask shapefile specified):
 
-``` {.python}
+```python
 from thyme.model import roms
 native_model_file = roms.ROMSFile('/path/to/existing_roms_file.nc')
 model_index_file = roms.ROMSIndexFile('/path/to/new_index_file.nc')
@@ -223,9 +223,9 @@ finally:
 To interpolate u/v current components from a ROMS-based model to a
 regular grid defined in an existing model index file, at a depth of 4.5
 meters below surface, for time index 0, and store the resulting u/v
-values in two [numpy.ma.masked\_array]{.title-ref} objects:
+values in two `numpy.ma.masked_array` objects:
 
-``` {.python}
+```python
 from thyme.model import roms
 native_model_file = roms.ROMSFile('/path/to/existing_roms_file.nc')
 model_index_file = roms.ROMSIndexFile('/path/to/existing_index_file.nc')
