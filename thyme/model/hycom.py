@@ -1,3 +1,4 @@
+# noinspection SpellCheckingInspection
 """
 Utility classes and methods for working with HYCOM output.
 
@@ -13,8 +14,6 @@ Global Real-Time Ocean Forecast System (G-RTOFS) produced by NOAA's National
 Centers for Environmental Prediction (NCEP), and would likely require
 modifications to support other HYCOM-based model output.
 """
-import datetime
-
 import netCDF4
 import numpy
 from osgeo import ogr, osr
@@ -188,6 +187,9 @@ class HYCOMFile(model.ModelFile):
         self.var_mask = self.var_u[0, 0, :, :]
 
         self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units))
+
+    def get_vertical_coordinate_type(self):
+        pass
 
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""

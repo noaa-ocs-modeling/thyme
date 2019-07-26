@@ -6,8 +6,6 @@ a regular, orthogonal lat/lon horizontal grid at a given depth-below-surface or
 to be optimized for encoding in a different format.
 
 """
-import datetime
-
 import netCDF4
 import numpy
 from osgeo import ogr, osr
@@ -179,6 +177,9 @@ class RectilinearFile(model.ModelFile):
 
         self.update_datetime_values(netCDF4.num2date(self.var_time, units=self.time_units))
 
+    def get_vertical_coordinate_type(self):
+        pass
+
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
@@ -212,15 +213,15 @@ def compress_variables(u, v, lat, lon, mask, time_index):
     u_single = u[time_index, 0, :, :]
     v_single = v[time_index, 0, :, :]
 
-    water_lat_rho = numpy.ma.masked_array(lat, mask)
-    water_lon_rho = numpy.ma.masked_array(lon, mask)
+    water_lat = numpy.ma.masked_array(lat, mask)
+    water_lon = numpy.ma.masked_array(lon, mask)
     water_u = numpy.ma.masked_array(u_single, mask)
     water_v = numpy.ma.masked_array(v_single, mask)
 
     u_compressed = numpy.ma.compressed(water_u)
     v_compressed = numpy.ma.compressed(water_v)
-    lat_compressed = numpy.ma.compressed(water_lat_rho)
-    lon_compressed = numpy.ma.compressed(water_lon_rho)
+    lat_compressed = numpy.ma.compressed(water_lat)
+    lon_compressed = numpy.ma.compressed(water_lon)
 
     return u_compressed, v_compressed, lat_compressed, lon_compressed
 

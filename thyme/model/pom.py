@@ -252,6 +252,9 @@ class POMFile(model.ModelFile):
         if self.nc_file.variables['sigma'].positive == 'down':
             self.var_sigma = self.var_sigma * -1
 
+    def get_vertical_coordinate_type(self):
+        pass
+
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
