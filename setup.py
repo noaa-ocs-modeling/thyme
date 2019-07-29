@@ -17,6 +17,7 @@ setuptools.setup(
     author_email='erin.nagel@noaa.gov, jason.greenlaw@noaa.gov',
     description='Tools for Hydrodynamic Model Output Extraction and Processing',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/noaa-ocs-modeling/thyme',
     packages=setuptools.find_packages(),
     setup_requires=['numpy'],
