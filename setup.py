@@ -11,7 +11,7 @@ with open(os.path.join(HERE, 'README.md'), encoding='utf-8') as f:
 
 setuptools.setup(
     name='thyme',
-    version='0.3.3',
+    version='0.3.4',
     license='BSD-2-Clause',
     author='Erin Nagel, Jason Greenlaw',
     author_email='erin.nagel@noaa.gov, jason.greenlaw@noaa.gov',
