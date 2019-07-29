@@ -24,7 +24,7 @@ setuptools.setup(
     classifiers=[
         'Programming Language :: Python :: 3',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD 2-Clause "Simplified License" (BSD-2-Clause)',
+        'License :: OSI Approved :: BSD 2-Clause "Simplified" License (BSD-2-Clause)',
         'Operating System :: OS Independent',
     ],
 )
