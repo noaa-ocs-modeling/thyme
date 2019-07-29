@@ -176,12 +176,21 @@ packages:
 -   scipy
 -   shapely
 
-The GDAL Python bindings require system libraries to be present, so it
-usually can\'t just be installed using [pip install gdal]{.title-ref}.
+Installation
+------------
+
+The GDAL Python bindings used by this package require system libraries to be
+present, so it usually can\'t just be installed using `pip install gdal`.
 We recommend installing GDAL either through a package manager (e.g.
 `conda`, `apt`, `yum`, `pacman`) or by compiling from scratch.
 [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is probably
 the easiest method.
+
+Once `gdal` has been installed, thyme can be installed using `pip`:
+
+```python
+pip install thyme
+```
 
 Example Usage
 -------------
