@@ -248,6 +248,28 @@ finally:
   native_model_file.close()
 ```
 
+Model Considerations
+--------------------
+- All modules in `thyme/models/` are written specifically for
+NOAA hydrodynamic ocean models and should be used with caution.
+The modules were written by referencing NOS model metadata, NOS model
+guidance, and roms, pom, fvcom, and hycom model documentation.
+
+- To develop a custom module to support a new model, use one of the existing modules
+(fvcom.py, hycom.py, pom.py, rectilinear.py, or roms,py) as a template, and place
+the new python module file alongside the others under the `thyme/model/` folder
+
+- Development of a custom module may be required to support:
+
+    - Model output options specific to your organization
+    - Different variable names and dimensions
+    - Different vertical coordinates
+    - Different variable masks
+    - Different vertical or time varying horizontal masks
+    - Different date and time format
+    - If the model has already been converted to a regular or rectilinear grid
+    - If the model output's vertical coordinate system uses standard depth levels versus sigma
+
 Authors
 -------
 
