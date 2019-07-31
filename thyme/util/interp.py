@@ -12,6 +12,7 @@ INTERP_METHOD_SCIPY = 'scipy'
 # Alternative method for horizontal interpolation
 INTERP_METHOD_GDAL = 'gdal'
 
+
 def interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out, interp_method=INTERP_METHOD_SCIPY):
     """Linear-interpolate irregularly-spaced values to regular grid.
 
@@ -38,9 +39,10 @@ def interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out, interp_method=
 
     raise ValueError(f"Invalid interpolation method specified [{interp_method}]. Supported values: {INTERP_METHOD_SCIPY}, {INTERP_METHOD_GDAL}")
 
+
 def scipy_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out):
     """Linear-interpolate irregularly-spaced values to regular grid.
-    
+
     Uses `scipy.interpolate.griddata` for linear interpolation.
 
     Args:
@@ -90,7 +92,8 @@ def gdal_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out):
     ds = gdal.GetDriverByName('Memory').Create('', 0, 0, 0, gdal.GDT_Float32)
     layer = ds.CreateLayer('irregular_points', srs=srs, geom_type=ogr.wkbPoint)
 
-    field_name = lambda x: 'field_{}'.format(x)
+    def field_name(x):
+        return 'field_{}'.format(x)
 
     for n in range(len(values)):
         layer.CreateField(ogr.FieldDefn(field_name(n + 1), ogr.OFTReal))
