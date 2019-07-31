@@ -188,7 +188,7 @@ the easiest method.
 
 Once `gdal` has been installed, thyme can be installed using `pip`:
 
-```python
+```bash
 pip install thyme
 ```
 
