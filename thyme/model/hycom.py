@@ -258,7 +258,13 @@ def vertical_interpolation(u, v, depth, num_x, num_y, time_index, target_depth):
     u_target_depth = numpy.ma.empty(shape=[num_y, num_x])
     v_target_depth = numpy.ma.empty(shape=[num_y, num_x])
 
-    # Determine the total depth at each valid u/v location
+    # For most models with standard depth levels ("z-levels"),
+    # the vertical layer does not follow bathymetry, vertical
+    # layers can be above and below the seafloor, therefore
+    # the horizontal mask will vary by vertical layer
+
+    # Determine the valid total depth at each
+    # valid u/v horizontal location.
     for ny in range(num_y):
         for nx in range(num_x):
             deepest_valid_depth_layer_index = None
