@@ -1,5 +1,4 @@
 from collections import namedtuple
-import datetime
 
 import numpy
 import pytest
