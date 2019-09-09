@@ -73,6 +73,9 @@ def gdal_interpolate_to_regular_grid(values, x_in, y_in, x_out, y_out):
 
     Uses `gdal.Grid` for linear interpolation.
 
+    NOTE: as of 9/2019, this GDAL interpolation is not working, seemingly
+    because of a bug with swig: https://github.com/OSGeo/gdal/issues/1677
+
     Args:
         values: `tuple` or `list` of `numpy.ma.masked_array`s containing values
             to be interpolated to the output grid.
