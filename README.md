@@ -270,6 +270,18 @@ finally:
   native_model_file.close()
 ```
 
+Running Tests
+-------------
+
+This project uses [pytest](https://docs.pytest.org) for unit testing.
+
+To run the test suite:
+
+```bash
+pip install pytest
+pytest -vv
+```
+
 Authors
 -------
 
