@@ -232,17 +232,26 @@ class ROMSFile(model.ModelFile):
                                                                 self.var_vtransform, self.num_eta, self.num_xi,
                                                                 self.num_sigma, time_index, target_depth)
 
-        water_u, water_v, water_ang_rho, water_lat_rho, water_lon_rho = mask_land(u_target_depth, v_target_depth,
-                                                                                  self.var_ang_rho, self.var_lat_rho,
-                                                                                  self.var_lon_rho, self.var_mask_u,
-                                                                                  self.var_mask_v, self.var_mask_rho)
+        # Create masked arrays to mask land values
+        water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(self.var_mask_u))
+        water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(self.var_mask_v))
+
+        # u/v masked values need to be set to 0 for averaging
+        water_u = water_u.filled(0)
+        water_v = water_v.filled(0)
+        water_ang_rho = numpy.ma.masked_array(self.var_ang_rho, numpy.logical_not(self.var_mask_rho))
+        water_lat_rho = numpy.ma.masked_array(self.var_lat_rho, numpy.logical_not(self.var_mask_rho))
+        water_lon_rho = numpy.ma.masked_array(self.var_lon_rho, numpy.logical_not(self.var_mask_rho))
 
         u_rho, v_rho = average_uv2rho(water_u, water_v)
 
         rot_u_rho, rot_v_rho = rotate_uv2d(u_rho, v_rho, water_ang_rho)
 
-        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(rot_u_rho, rot_v_rho,
-                                                                                        water_lat_rho, water_lon_rho)
+        # u/v 1d arrays for interpolation
+        u_compressed = numpy.ma.compressed(rot_u_rho)
+        v_compressed = numpy.ma.compressed(rot_v_rho)
+        lat_compressed = numpy.ma.compressed(water_lat_rho)
+        lon_compressed = numpy.ma.compressed(water_lon_rho)
 
         return interp.interpolate_to_regular_grid((u_compressed, v_compressed),
                                                   lon_compressed, lat_compressed,
@@ -258,44 +267,28 @@ class ROMSFile(model.ModelFile):
                                                                 self.var_vtransform, self.num_eta, self.num_xi,
                                                                 self.num_sigma, time_index, target_depth)
 
-        water_u, water_v, water_ang_rho, water_lat_rho, water_lon_rho = mask_land(u_target_depth, v_target_depth,
-                                                                                  self.var_ang_rho, self.var_lat_rho,
-                                                                                  self.var_lon_rho, self.var_mask_u,
-                                                                                  self.var_mask_v, self.var_mask_rho)
+        # Create masked arrays to mask land values.
+        water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(self.var_mask_u))
+        water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(self.var_mask_v))
 
+        # u/v masked values need to be set to 0 for averaging
+        water_u = water_u.filled(0)
+        water_v = water_v.filled(0)
+        water_ang_rho = numpy.ma.masked_array(self.var_ang_rho, numpy.logical_not(self.var_mask_rho))
+        water_lat_rho = numpy.ma.masked_array(self.var_lat_rho, numpy.logical_not(self.var_mask_rho))
+        water_lon_rho = numpy.ma.masked_array(self.var_lon_rho, numpy.logical_not(self.var_mask_rho))
+
+        # average and rotate u/v
         u_rho, v_rho = average_uv2rho(water_u, water_v)
-
         rot_u_rho, rot_v_rho = rotate_uv2d(u_rho, v_rho, water_ang_rho)
 
-        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(rot_u_rho, rot_v_rho,
-                                                                                        water_lat_rho, water_lon_rho)
+        # u/v 1d arrays for interpolation
+        u_compressed = numpy.ma.compressed(rot_u_rho)
+        v_compressed = numpy.ma.compressed(rot_v_rho)
+        lat_compressed = numpy.ma.compressed(water_lat_rho)
+        lon_compressed = numpy.ma.compressed(water_lon_rho)
 
         return u_compressed, v_compressed, lat_compressed, lon_compressed
-
-
-def compress_variables(rot_u_rho, rot_v_rho, water_lat_rho, water_lon_rho):
-    """Compress masked variables for interpolation.
-
-    Args:
-        rot_u_rho: ``numpy.ma.masked_array`` containing u values rotated and
-            averaged to rho.
-        rot_v_rho: ``numpy.ma.masked_array`` containing v values rotated and
-            averaged to rho.
-        water_lat_rho: ``numpy.ma.masked_array`` containing latitude values of
-            rho points.
-        water_lon_rho: ``numpy.ma.masked_array`` containing longitude values of
-            rho points.
-    
-    Returns:
-        A 4-tuple containing u, v, lat, and lon value compressed (i.e., with
-        masked data values removed) arrays (in that order).
-    """
-    u_compressed = numpy.ma.compressed(rot_u_rho)
-    v_compressed = numpy.ma.compressed(rot_v_rho)
-    lat_compressed = numpy.ma.compressed(water_lat_rho)
-    lon_compressed = numpy.ma.compressed(water_lon_rho)
-
-    return u_compressed, v_compressed, lat_compressed, lon_compressed
 
 
 def rotate_uv2d(u_rho, v_rho, water_ang_rho):
@@ -359,35 +352,6 @@ def average_uv2rho(water_u, water_v):
         v_rho[num_eta-1, xi] = water_v[num_eta-1, xi]
 
     return u_rho, v_rho
-
-
-def mask_land(u_target_depth, v_target_depth, ang_rho, lat_rho, lon_rho, mask_u, mask_v, mask_rho):
-    """Create masked arrays for specified variables to mask land values.
-
-    Args:
-        u_target_depth: ``numpy.ndarray`` containing u values for entire grid
-            at specified depth.
-        v_target_depth: ``numpy.ndarray`` containing v values for entire grid
-            at specified depth.
-        ang_rho: ``numpy.ndarray`` containing angle-of-rotation values at
-            rho points.
-        lat_rho: ``numpy.ndarray`` containing latitude values of rho points.
-        lon_rho: ``numpy.ndarray`` containing longitude values of rho points.
-        mask_u: ``numpy.ndarray`` containing mask values for u points.
-        mask_v: ``numpy.ndarray`` containing mask values for v points.
-        mask_rho: ``numpy.ndarray`` containing mask values for rho points.
-    """
-    water_u = numpy.ma.masked_array(u_target_depth, numpy.logical_not(mask_u))
-    water_v = numpy.ma.masked_array(v_target_depth, numpy.logical_not(mask_v))
-
-    # u/v masked values need to be set to 0 for averaging
-    water_u = water_u.filled(0)
-    water_v = water_v.filled(0)
-    water_ang_rho = numpy.ma.masked_array(ang_rho, numpy.logical_not(mask_rho))
-    water_lat_rho = numpy.ma.masked_array(lat_rho, numpy.logical_not(mask_rho))
-    water_lon_rho = numpy.ma.masked_array(lon_rho, numpy.logical_not(mask_rho))
-
-    return water_u, water_v, water_ang_rho, water_lat_rho, water_lon_rho
 
 
 def vertical_interpolation(u, v, s_rho, mask_rho, mask_u, mask_v, zeta, h, hc, cs_r, vtransform, num_eta, num_xi, num_sigma, time_index, target_depth):
