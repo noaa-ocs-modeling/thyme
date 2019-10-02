@@ -259,6 +259,7 @@ class FVCOMFile(model.ModelFile):
 
         siglay_values = self.var_siglay[:, 0]
         vertical_coordinates = 'UNIFORM'
+
         for i in range(self.var_siglay.shape[1]):
             for s in range(self.var_siglay.shape[0]):
                 if self.var_siglay[s, i] != siglay_values[s]:
@@ -284,7 +285,7 @@ class FVCOMFile(model.ModelFile):
                 siglay_centroid[i, :] = interpolate.griddata(coords, self.var_siglay[i, :], (self.var_lon_centroid, self.var_lat_centroid), method='linear')
         else:
             for k in range(self.num_nele):
-                    siglay_centroid[:, k] = self.var_siglay[:, 0]
+                siglay_centroid[:, k] = self.var_siglay[:, 0]
 
         return siglay_centroid, self.var_lat_centroid, self.var_lon_centroid, self.num_nele, self.num_siglay
 
@@ -294,8 +295,10 @@ class FVCOMFile(model.ModelFile):
         h_centroid, zeta_centroid = node_to_centroid(self.var_zeta, self.var_h, self.var_lon_nodal, self.var_lat_nodal,
                                                      self.var_lon_centroid, self.var_lat_centroid, time_index)
 
+        siglay_centroid = model_index.nc_file.variables['siglay_centroid'][:, :]
+
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, h_centroid, zeta_centroid,
-                                                                model_index, self.num_nele, self.num_siglay, time_index,
+                                                                siglay_centroid, self.num_nele, self.num_siglay, time_index,
                                                                 target_depth)
 
         return interp.interpolate_to_regular_grid((u_target_depth, v_target_depth),
@@ -304,7 +307,7 @@ class FVCOMFile(model.ModelFile):
                                                   interp_method=interp_method)
 
 
-def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, time_index, target_depth):
+def vertical_interpolation(u, v, h, zeta, siglay_centroid, num_nele, num_siglay, time_index, target_depth):
     """Vertically interpolate variables to target depth.
 
     Args:
@@ -312,7 +315,7 @@ def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, tim
         v: `numpy.ndarray` containing v values for entire grid.
         h: `numpy.ndarray` containing bathymetry at centroid points.
         zeta: `numpy.ndarray` containing MSL free surface at centroid points in meters.
-        model_index: `ModelIndexFile` instance representing model index file containing siglay.
+        siglay_centroid: `numpy.ndarray` containing sigma values at centroid points.
         num_nele: Number of elements(centroid).
         num_siglay: Number of sigma layers.
         time_index: Single forecast time index value.
@@ -323,10 +326,9 @@ def vertical_interpolation(u, v, h, zeta, model_index, num_nele, num_siglay, tim
     true_depth = zeta + h
 
     sigma_depth_layers = numpy.ma.empty(shape=[num_siglay, num_nele])
-    siglay = model_index.nc_file.variables['siglay_centroid'][:, :]
 
     for k in range(num_siglay):
-        sigma_depth_layers[k, :] = siglay[k, :] * true_depth
+        sigma_depth_layers[k, :] = siglay_centroid[k, :] * true_depth
 
     if target_depth < 0:
         raise Exception('Target depth must be positive')
