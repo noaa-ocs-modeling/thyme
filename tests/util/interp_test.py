@@ -9,6 +9,7 @@ from thyme.util import interp
 # Container for test fixture's expected input/output values
 InterpValues = namedtuple('InterpValues', ['values_in', 'x_in', 'y_in', 'x_out', 'y_out', 'expected_values_out'])
 
+
 @pytest.fixture
 def interp_values():
     lon_in = numpy.array([-73.6 + i*0.2 for i in range(3)])
@@ -52,7 +53,7 @@ def interp_values():
 # Commenting out GDAL interp test until swig issue is fixed
 # See https://github.com/OSGeo/gdal/issues/1677
 #
-#def test_gdal_interp(interp_values):
+# def test_gdal_interp(interp_values):
 #    """Test gdal interpolation to regular grid"""
 #    print("interp_values: " + repr(interp_values))
 #    values_out = interp.gdal_interpolate_to_regular_grid(
@@ -61,11 +62,13 @@ def interp_values():
 #        interp_values.y_in,
 #        interp_values.x_out,
 #        interp_values.y_out)
-#    values_out_masked = [numpy.ma.masked_array(x, mask=interp_values.expected_values_out[i].mask) for i, x in enumerate(values_out)]
+#   values_out_masked = [numpy.ma.masked_array(x, mask=interp_values.expected_
+#    values_out[i].mask) for i, x in enumerate(values_out)]
 #
 #    print("values_out_masked: " + repr(values_out_masked))
 #
-#    assert all([numpy.allclose(values_out_masked[i], interp_values.expected_values_out[i]) for i in range(len(values_out_masked))])
+#    assert all([numpy.allclose(values_out_masked[i], interp_values.expected_
+#    values_out[i]) for i in range(len(values_out_masked))])
 
 
 def test_scipy_interp(interp_values):
@@ -82,6 +85,7 @@ def test_scipy_interp(interp_values):
     print("values_out_masked: " + repr(values_out_masked))
 
     assert all([numpy.allclose(values_out_masked[i], interp_values.expected_values_out[i]) for i in range(len(values_out_masked))])
+
 
 def test_generic_interp(interp_values):
     """Test generic interpolation function"""
