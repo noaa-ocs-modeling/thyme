@@ -306,6 +306,21 @@ class FVCOMFile(model.ModelFile):
                                                   model_index.var_x, model_index.var_y,
                                                   interp_method=interp_method)
 
+    def output_native_grid(self, time_index, target_depth):
+        """Generate output using native grid coordinates"""
+
+        h_centroid, zeta_centroid = node_to_centroid(self.var_zeta, self.var_h, self.var_lon_nodal, self.var_lat_nodal,
+                                                     self.var_lon_centroid, self.var_lat_centroid, time_index)
+
+        vertical_coordinates = self.get_vertical_coordinate_type()
+        siglay_centroid = self.sigma_to_centroid(vertical_coordinates)
+
+        u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, h_centroid, zeta_centroid,
+                                                                siglay_centroid[0], self.num_nele, self.num_siglay, time_index,
+                                                                target_depth)
+
+        return u_target_depth, v_target_depth, self.var_lat_centroid, self.var_lon_centroid
+
 
 def vertical_interpolation(u, v, h, zeta, siglay_centroid, num_nele, num_siglay, time_index, target_depth):
     """Vertically interpolate variables to target depth.
