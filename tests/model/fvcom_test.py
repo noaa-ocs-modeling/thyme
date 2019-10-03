@@ -4,6 +4,212 @@ import numpy
 import pytest
 
 from thyme.model.fvcom import node_to_centroid
+from thyme.model.fvcom import vertical_interpolation
+
+VerticalValues = namedtuple(
+    'VerticalValues',
+    ['u',
+     'v',
+     'h',
+     'zeta',
+     'siglay_centroid',
+     'num_nele',
+     'num_siglay',
+     'time_index',
+     'target_depth_default',
+     'target_depth_surface',
+     'target_depth_deep',
+     'expected_u_target_depth_default',
+     'expected_v_target_depth_default',
+     'expected_u_target_depth_surface',
+     'expected_v_target_depth_surface',
+     'expected_u_target_depth_deep',
+     'expected_v_target_depth_deep'])
+
+
+@pytest.fixture
+def vertical_values():
+
+    time_index = 0
+    num_nele = 6
+    num_siglay = 20
+
+    target_depth_default = 4.5
+    target_depth_surface = 0
+    target_depth_deep = 15
+
+    u = numpy.array(
+        [[
+
+            [0.1987104, 0.20282207, 0.22636837, 0.22338444, 0.22267905, 0.25851583],
+            [0.17984135, 0.18718982, 0.20845266, 0.20881361, 0.2097686, 0.24099022],
+            [0.11546519, 0.11235027, 0.12845743, 0.14677778, 0.17036788, 0.14718369],
+            [-0.04345991, -0.0362343, -0.01943639, 0.03145187, 0.05482485, 0.01756552],
+            [-0.11175916, -0.10817654, -0.07648413, -0.05387694, -0.02363495, -0.07206099],
+            [-0.15002064, -0.1458673, -0.11296615, -0.09673776, -0.07272214, -0.11500881],
+            [-0.18279588, -0.17216434, -0.15122096, -0.13439055, -0.12422991, -0.15305918],
+            [-0.22257489, -0.21475703, -0.19943172, -0.19317457, -0.18883257, -0.19185503],
+            [-0.26589555, -0.26381484, -0.2563959, -0.2623669, -0.2418433, -0.22976391],
+            [-0.29618508, -0.3025776, -0.30066454, -0.30951524, -0.2785821, -0.2603346],
+            [-0.31844422, -0.3287656, -0.32818496, -0.34010696, -0.2991507, -0.28074494],
+            [-0.3200005, -0.3282557, -0.33371437, -0.3424295, -0.3079574, -0.2808675],
+            [-0.28674564, -0.29246253, -0.3045539, -0.3127165, -0.2805328, -0.26253417],
+            [-0.2308568, -0.23583505, -0.25023454, -0.25649628, -0.2430087, -0.21772045],
+            [-0.1515698, -0.17267239, -0.1813446, -0.19186072, -0.19516239, -0.16393802],
+            [-0.13119768, -0.10612836, -0.11343177, -0.12980227, -0.1302748, -0.12355448],
+            [-0.11103977, -0.09538705, -0.09509068, -0.11300715, -0.10742138, -0.10589793],
+            [-0.09441119, -0.0877323, -0.08854523, -0.10422827, -0.09832109, -0.098252],
+            [-0.08462795, -0.0790456, -0.07945603, -0.09364957, -0.08832049, -0.08927543],
+            [-0.06875627, -0.06421904, -0.06397585, -0.07394486, -0.07045165, -0.07252091]
+
+        ]])
+
+    v = numpy.array(
+        [[
+            [0.04272371, 0.03626542, 0.03629172, 0.02365562, 0.04447182, 0.02940587],
+            [0.04550566, 0.03864311, 0.03937801, 0.02540983, 0.04566612, 0.03169739],
+            [0.05464792, 0.05194416, 0.05265207, 0.03223358, 0.04813668, 0.0406685],
+            [0.05445727, 0.05883322, 0.04983669, 0.0348991, 0.03746793, 0.04016836],
+            [0.00415152, -0.00149629, -0.00077556, 0.01316911, 0.00495433, 0.01126673],
+            [-0.04056849, -0.0399819, -0.02377908, -0.01824965, -0.0271148, -0.02322751],
+            [-0.05177833, -0.05065423, -0.04175215, -0.03915307, -0.05457062, -0.0499136],
+            [-0.0646683, -0.0626291, -0.05882293, -0.06086947, -0.07759117, -0.06596889],
+            [-0.06379095, -0.06311549, -0.06392502, -0.07486805, -0.08554274, -0.06285658],
+            [-0.05030349, -0.05021876, -0.05602735, -0.06358989, -0.07058521, -0.04798502],
+            [-0.02668872, -0.02443161, -0.03338933, -0.03849523, -0.04692423, -0.03141288],
+            [-0.0020759, 0.00556405, -0.00915105, -0.01343074, -0.02884087, -0.01940906],
+            [0.0134382, 0.01965301, 0.00118551, -0.00354341, -0.0235792, -0.01681828],
+            [0.00625094, 0.0087254, -0.00298712, -0.01015626, -0.03078334, -0.02404925],
+            [-0.02794126, -0.02092287, -0.02809138, -0.03298125, -0.04707557, -0.04252515],
+            [-0.02949184, -0.03453156, -0.03266618, -0.04048001, -0.05651411, -0.03880842],
+            [-0.02897151, -0.0317935, -0.02676859, -0.03367185, -0.05099317, -0.03234524],
+            [-0.02654107, -0.02930111, -0.0243634, -0.03028261, -0.04743995, -0.02939028],
+            [-0.02417713, -0.0263748, -0.02134923, -0.02650077, -0.04303462, -0.02615478],
+            [-0.01982844, -0.02149794, -0.01682694, -0.02036272, -0.03471823, -0.02087618]
+
+        ]])
+
+    h = numpy.array(
+        [
+
+            1.91399347, 4.6028045, 3.29994912, 30.32372402, 9.3237240, 12.19253056
+
+        ])
+
+    zeta = numpy.array(
+        [
+           -0.1443424, -0.14408446, -0.15902775, -0.16805193, -0.16938841, -0.16457143,
+
+        ])
+
+    siglay_centroid = numpy.array(
+        [
+
+            [-0.02500004, -0.02500004, -0.02500004, -0.02500004, -0.02500004, -0.02500004],
+            [-0.07500005, -0.07500005, -0.07500005, -0.07500005, -0.07500005, -0.07500005],
+            [-0.12500003, -0.12500003, -0.12500003, -0.12500003, -0.12500003, -0.12500003],
+            [-0.17500001, -0.17500001, -0.17500001, -0.17500001, -0.17500001, -0.17500001],
+            [-0.22500002, -0.22500002, -0.22500002, -0.22500002, -0.22500002, -0.22500002],
+            [-0.27500007, -0.27500007, -0.27500007, -0.27500007, -0.27500007, -0.27500007],
+            [-0.32500005, -0.32500005, -0.32500005, -0.32500005, -0.32500005, -0.32500005],
+            [-0.37500003, -0.37500003, -0.37500003, -0.37500003, -0.37500003, -0.37500003],
+            [-0.42500004, -0.42500004, -0.42500004, -0.42500004, -0.42500004, -0.42500004],
+            [-0.47500002, -0.47500002, -0.47500002, -0.47500002, -0.47500002, -0.47500002],
+            [-0.52500004, -0.52500004, -0.52500004, -0.52500004, -0.52500004, -0.52500004],
+            [-0.57500005, -0.57500005, -0.57500005, -0.57500005, -0.57500005, -0.57500005],
+            [-0.6250001, -0.6250001, -0.6250001, -0.6250001, -0.6250001, -0.6250001],
+            [-0.6750001, -0.6750001, -0.6750001, -0.6750001, -0.6750001, -0.6750001],
+            [-0.725, -0.725, -0.725, -0.725, -0.725, -0.725],
+            [-0.7750001, -0.7750001, -0.7750001, -0.7750001, -0.7750001, -0.7750001],
+            [-0.82500005, -0.82500005, -0.82500005, -0.82500005, -0.82500005,  -0.82500005],
+            [-0.87500006, -0.87500006, -0.87500006, -0.87500006, -0.87500006, -0.87500006],
+            [-0.9250001, -0.9250001, -0.9250001, -0.9250001, -0.9250001,  -0.9250001],
+            [-0.975, -0.975, -0.975, -0.975, -0.975, -0.975]
+
+        ])
+
+    expected_u_target_depth_default = numpy.array(
+        [
+            -0.31563387, -0.328691, -0.33101943,  0.07804711, -0.29301054, -0.2015678
+        ])
+
+    expected_v_target_depth_default = numpy.array(
+        [
+
+            -0.0000387741164, -0.0200431458, -0.0209643618, 0.0338221474, -0.0539875302, -0.0651714737
+
+        ])
+
+    expected_u_target_depth_surface = numpy.array(
+        [
+            0.17138823, 0.20053502, 0.21718446, 0.22904586, 0.22435648, 0.2624828
+        ])
+
+    expected_v_target_depth_surface = numpy.array(
+        [
+
+            0.04670611, 0.03661328, 0.03787381, 0.02297403, 0.04431665, 0.02888718
+
+        ])
+
+    expected_u_target_depth_deep = numpy.array(
+        [
+            -0.31563387, -0.328691, -0.33101943, -0.32664149, -0.29647826, -0.27612501
+        ])
+
+    expected_v_target_depth_deep = numpy.array(
+        [
+            -0.0000387741164, -0.0200431458, -0.0209643618, -0.0495410757, -0.0499984588, -0.0351640265
+        ])
+
+    return VerticalValues(u, v, h, zeta, siglay_centroid, num_nele, num_siglay, time_index, target_depth_default,
+                          target_depth_surface, target_depth_deep, expected_u_target_depth_default,
+                          expected_v_target_depth_default, expected_u_target_depth_surface,
+                          expected_v_target_depth_surface, expected_u_target_depth_deep, expected_v_target_depth_deep)
+
+
+def test_vertical_interpolation(vertical_values):
+    """Test vertical interpolation."""
+    u_target_depth, v_target_depth = vertical_interpolation(vertical_values.u, vertical_values.v, vertical_values.h,
+                                                            vertical_values.zeta, vertical_values.siglay_centroid,
+                                                            vertical_values.num_nele, vertical_values.num_siglay,
+                                                            vertical_values.time_index,
+                                                            vertical_values.target_depth_default)
+
+    print(f"u_target_depth: {u_target_depth}")
+    print(f"v_target_depth: {v_target_depth}")
+    assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_default)
+    assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_default)
+
+
+def test_vertical_interpolation_at_surface(vertical_values):
+    """Test vertical interpolation."""
+    u_target_depth, v_target_depth = vertical_interpolation(vertical_values.u, vertical_values.v, vertical_values.h,
+                                                            vertical_values.zeta, vertical_values.siglay_centroid,
+                                                            vertical_values.num_nele, vertical_values.num_siglay,
+                                                            vertical_values.time_index,
+                                                            vertical_values.target_depth_surface)
+
+    print(f"u_target_depth_surface: {u_target_depth}")
+    print(f"v_target_depth_surface: {v_target_depth}")
+    assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_surface)
+    assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_surface)
+
+
+def test_vertical_interpolation_deep(vertical_values):
+    """Test vertical interpolation."""
+    u_target_depth, v_target_depth = vertical_interpolation(vertical_values.u, vertical_values.v, vertical_values.h,
+                                                            vertical_values.zeta, vertical_values.siglay_centroid,
+                                                            vertical_values.num_nele, vertical_values.num_siglay,
+                                                            vertical_values.time_index,
+                                                            vertical_values.target_depth_deep)
+
+    print(f"u_target_depth_deep: {u_target_depth}")
+    print(f"v_target_depth_deep: {v_target_depth}")
+    assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_deep)
+    assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_deep)
+
+
 
 NodeToCentroidValues = namedtuple(
     'NodeToCentroidValues',
