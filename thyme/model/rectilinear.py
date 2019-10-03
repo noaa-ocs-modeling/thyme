@@ -183,7 +183,18 @@ class RectilinearFile(model.ModelFile):
     def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate u/v to a regular grid"""
 
-        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
+        u_single = self.var_u[time_index, 0, :, :]
+        v_single = self.var_v[time_index, 0, :, :]
+
+        water_lat = numpy.ma.masked_array(self.var_lat, self.var_mask,)
+        water_lon = numpy.ma.masked_array(self.var_lon, self.var_mask,)
+        water_u = numpy.ma.masked_array(u_single, self.var_mask,)
+        water_v = numpy.ma.masked_array(v_single, self.var_mask,)
+
+        u_compressed = numpy.ma.compressed(water_u)
+        v_compressed = numpy.ma.compressed(water_v)
+        lat_compressed = numpy.ma.compressed(water_lat)
+        lon_compressed = numpy.ma.compressed(water_lon)
 
         return interp.interpolate_to_regular_grid((u_compressed, v_compressed),
                                                   lon_compressed, lat_compressed,
@@ -193,35 +204,19 @@ class RectilinearFile(model.ModelFile):
     def output_native_grid(self, time_index, target_depth):
         """Generate output using native grid coordinates"""
 
-        u_compressed, v_compressed, lat_compressed, lon_compressed = compress_variables(self.var_u, self.var_v, self.var_lat, self.var_lon, self.var_mask, time_index)
+        u_single = self.var_u[time_index, 0, :, :]
+        v_single = self.var_v[time_index, 0, :, :]
+
+        water_lat = numpy.ma.masked_array(self.var_lat, self.var_mask,)
+        water_lon = numpy.ma.masked_array(self.var_lon, self.var_mask,)
+        water_u = numpy.ma.masked_array(u_single, self.var_mask,)
+        water_v = numpy.ma.masked_array(v_single, self.var_mask,)
+
+        u_compressed = numpy.ma.compressed(water_u)
+        v_compressed = numpy.ma.compressed(water_v)
+        lat_compressed = numpy.ma.compressed(water_lat)
+        lon_compressed = numpy.ma.compressed(water_lon)
 
         return u_compressed, v_compressed, lat_compressed, lon_compressed
 
-
-def compress_variables(u, v, lat, lon, mask, time_index):
-    """Optimize variables.
-
-    Args:
-        u: `numpy.ndarray` containing u values for entire grid.
-        v: `numpy.ndarray` containing v values for entire grid.
-        lat: `numpy.ma.masked_array` containing latitude values.
-        lon: `numpy.ma.masked_array` containing longitude values.
-        mask: `numpy.ma.masked_array` containing u/v mask values.
-        time_index: Single forecast time index value.
-    """
-
-    u_single = u[time_index, 0, :, :]
-    v_single = v[time_index, 0, :, :]
-
-    water_lat = numpy.ma.masked_array(lat, mask)
-    water_lon = numpy.ma.masked_array(lon, mask)
-    water_u = numpy.ma.masked_array(u_single, mask)
-    water_v = numpy.ma.masked_array(v_single, mask)
-
-    u_compressed = numpy.ma.compressed(water_u)
-    v_compressed = numpy.ma.compressed(water_v)
-    lat_compressed = numpy.ma.compressed(water_lat)
-    lon_compressed = numpy.ma.compressed(water_lon)
-
-    return u_compressed, v_compressed, lat_compressed, lon_compressed
 
