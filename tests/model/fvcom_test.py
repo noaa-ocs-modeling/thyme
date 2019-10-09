@@ -210,7 +210,6 @@ def test_vertical_interpolation_deep(vertical_values):
     assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_deep)
 
 
-
 NodeToCentroidValues = namedtuple(
     'NodeToCentroidValues',
     ['zeta',
@@ -313,7 +312,8 @@ def node_to_centroid_values():
            -0.16240301, -0.16138305
         ])
 
-    return NodeToCentroidValues(zeta, h, lat_node, lon_node, lat_centroid, lon_centroid, time_index, expected_h_centroid, expected_zeta_centroid)
+    return NodeToCentroidValues(zeta, h, lat_node, lon_node, lat_centroid, lon_centroid, time_index,
+                                expected_h_centroid, expected_zeta_centroid)
 
 
 def test_node_to_centroid(node_to_centroid_values):
