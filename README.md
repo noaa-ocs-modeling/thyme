@@ -1,5 +1,6 @@
 thyme
 =====
+[![Build Status](https://travis-ci.com/noaa-ocs-modeling/thyme.svg?branch=master)](https://travis-ci.com/noaa-ocs-modeling/thyme)
 
 **T**ools for **Hy**drodynamic **M**odel Output **E**xtraction
 
