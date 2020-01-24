@@ -2,6 +2,8 @@ language: python
 
 python:
   - "3.6"
+  - "3.7"
+  - "3.8"
 
 branches:
   only:
@@ -26,3 +28,13 @@ install:
 
 script:
 - pytest -vv
+
+deploy:
+  provider: pypi
+  user: enagel
+  password:
+    secure: hzNqwIlV0g56NV83+TJo0cLhDdSgQ6cgotFG+L5eWeh/OXVaGrosMPHxpn19czQp1OmN0N5bINzt9ew/FYug/eyhvBh+druJARRPdOm3ekiRTW2AGEh0m8U7ApETXUKX3teSX2O+vRDvJJC8zlVcmHcKij+yyKjQc2XXtizWWD4Xdqep0QBXfVIci38nDHkmb68NdsJsCNN2cJJozlqNh2LWd71Pl6NVyYLtiD3PFdhqlaVulflTyh96tALMRPPS9cZuoAOGrX7d1VyErBlr+7xoVP1ysdGGwqs6/lFoM3w3NP0Yj4iVPk7V4R2G7nxToeujQicMtbSwDJxqQ/706NV9dSpigmNS2129EfbcEomcyguYk7phNsx2m5S7yzVOffu3YmEBuB20nisTtI3E5+wdUbtf1PpPEtGIRmakPIFhfQT6IXAgGZEBfNc0K7ZzJ381kqCihpnFp4swH5uf6MrVrHDtwyALevfQqlAHZRakvdftw7VPPXfL6Kc6yn6rkUvfLYwRtbd8BtEVB1gYqdXIhJG3TARfkp9DThetlPAqqrctrfM8EYVTeDLN5tPo2pTgvYX1eYoFnxEXssjM5RkKVnpWitkXKEBdnrDQ1ijvUnDOuneLjMf5wOtPjhrJgzVyDDYLcDeNUxchxHVsPgY2WirBjDZGU2D9+SC/gxk=
+  on:
+    tags: true
+    python: 3.7
+    branch: master
