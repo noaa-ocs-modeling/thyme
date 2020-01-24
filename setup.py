@@ -20,7 +20,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url='https://github.com/noaa-ocs-modeling/thyme',
     setup_requires=['numpy'],
-    install_requires=['shapely', 'numpy', 'scipy', 'netCDF4', 'gdal'],
+    install_requires=['shapely', 'numpy', 'scipy', 'netCDF4', 'gdal', 'pytest'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Intended Audience :: Science/Research',
