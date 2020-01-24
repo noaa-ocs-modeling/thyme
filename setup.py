@@ -12,7 +12,7 @@ with open(os.path.join(HERE, 'README.md'), encoding='utf-8') as f:
 setuptools.setup(
     name='thyme',
     license='BSD-2-Clause',
-    version='0.4.5',
+    version='0.4.6',
     author='Erin Nagel, Jason Greenlaw',
     author_email='erin.nagel@noaa.gov, jason.greenlaw@noaa.gov',
     description='Tools for Hydrodynamic Model Output Extraction and Processing',
