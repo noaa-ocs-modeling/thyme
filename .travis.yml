@@ -1,15 +1,15 @@
 language: python
 
 python:
-  - "3.6"
-  - "3.7"
-
+  - '3.6'
+  - '3.7'
+  -
 branches:
   only:
     - master
     - dev
-    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
-
+    - "/^v\\d+\\.\\d+(\\.\\d+)?(-\\S*)?$/"
+    -
 install:
   - sudo apt-get update
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -18,21 +18,19 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
   - conda info -a
-
-  # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION gdal scipy numpy shapely netCDF4 pytest
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION gdal scipy numpy
+    shapely netCDF4 pytest
   - conda activate test-environment
   - python setup.py install
-
+  -
 script:
 - pytest -vv
-
+- 
 deploy:
   provider: pypi
-  user: enagel
+  user: __token__
   password:
-    secure: hzNqwIlV0g56NV83+TJo0cLhDdSgQ6cgotFG+L5eWeh/OXVaGrosMPHxpn19czQp1OmN0N5bINzt9ew/FYug/eyhvBh+druJARRPdOm3ekiRTW2AGEh0m8U7ApETXUKX3teSX2O+vRDvJJC8zlVcmHcKij+yyKjQc2XXtizWWD4Xdqep0QBXfVIci38nDHkmb68NdsJsCNN2cJJozlqNh2LWd71Pl6NVyYLtiD3PFdhqlaVulflTyh96tALMRPPS9cZuoAOGrX7d1VyErBlr+7xoVP1ysdGGwqs6/lFoM3w3NP0Yj4iVPk7V4R2G7nxToeujQicMtbSwDJxqQ/706NV9dSpigmNS2129EfbcEomcyguYk7phNsx2m5S7yzVOffu3YmEBuB20nisTtI3E5+wdUbtf1PpPEtGIRmakPIFhfQT6IXAgGZEBfNc0K7ZzJ381kqCihpnFp4swH5uf6MrVrHDtwyALevfQqlAHZRakvdftw7VPPXfL6Kc6yn6rkUvfLYwRtbd8BtEVB1gYqdXIhJG3TARfkp9DThetlPAqqrctrfM8EYVTeDLN5tPo2pTgvYX1eYoFnxEXssjM5RkKVnpWitkXKEBdnrDQ1ijvUnDOuneLjMf5wOtPjhrJgzVyDDYLcDeNUxchxHVsPgY2WirBjDZGU2D9+SC/gxk=
+    secure: AGK5fi44BGqeNcbm5wCue55Id847XZbQbKZUJB2TFcpeay6Jypnlwia2mf7sxz8yjkkH1kJVRvUTyZ0Fo4SEQBJXSiK/HyJ2zjLJ+SYoxqeeUTIG9K2/xiaOliKFoZjsSYRWR4P9txkTf2ipjaXu6BIX4N0Cdgef43lW/8i8elC8hzavP0WJLXIuS+7lydFkx0C2d0xVFiSHywns/liBacUJmrRiwtQ8SsQIzqf8/Edr06Sg71xGptXumchFDZBr2FIN7ehrjcD4crZfRdpouNVu/cOmyIbbEE2oFAD1h5WB2B4zDc3/JQVKkOprek37Cdoxc7oWrcTHqy0eVQ+wBUfpicoFkqr56M5e9nJDyD0BTaVTygb+05nqcaCZzUULcPvgWe978Uqmmes6aqWVxTKxmiytZIId/qy0Lf9GtEq+L9PXLpukUi6N2kKnV9B/Sb27Whoglrqx6DR/byRZDtBC6f55s/5uh2ViTa7ArJgfu/wTjXnaQuj01v98tYfRJ5u3x0LyfIuj0idll8r1VFYGY5Iz8/ReqO7bryWWGWQxavIeWhnXBOD3GEArEuqymPR4uI6WitcI+8mkU+AO5DNNBJtd0hGN4mHQPT4ZuHnE4YozAgYeMSRBuLALKqs53xy1SlR83PGGgUujcvEw3j7+oWVgQ1JoJhafRuBaUOQ=
   on:
     tags: true
