@@ -250,7 +250,7 @@ class ModelIndexFile:
         if shoreline_shp is not None:
             land_mask = self.init_shoreline_mask(reg_grid, shoreline_shp)
 
-        print ('Full grid dimensions (y,x): ({},{})'.format(len(reg_grid.y_coords), len(reg_grid.x_coords)))
+        print('Grid dimensions (y,x): ({},{})'.format(len(reg_grid.y_coords), len(reg_grid.x_coords)))
 
         # Calculate the mask
         grid_cell_mask = self.compute_grid_mask(model_file, reg_grid)
@@ -339,8 +339,7 @@ class ModelIndexFile:
         fid = 0
         for feature in layer:
             geom = feature.GetGeometryRef()
-            intersection = ofs_poly.Intersection(geom)
-            if intersection.ExportToWkt() != 'GEOMETRYCOLLECTION EMPTY':
+            if ofs_poly.Intersects(geom):
                 subset_polys[fid] = geom.ExportToJson()
                 if subset_grid_field_name is not None:
                     field_name = feature.GetField(str(subset_grid_field_name))
