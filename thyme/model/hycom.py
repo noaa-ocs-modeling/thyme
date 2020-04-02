@@ -239,9 +239,11 @@ def vertical_interpolation(u, v, depth, num_x, num_y, time_index, target_depth):
         time_index: Single forecast time index value.
         num_x: X dimensions
         num_y: Y dimensions
-        target_depth: The water current at a specified target depth below the sea
-            surface in meters, default target depth is 4.5 meters, target interpolation
-            depth must be greater or equal to 0.
+        target_depth: The target depth-below-sea-surface to which water
+            currents will be interpolated, in meters. Must be zero or greater.
+            For areas shallower than double this value, values will be
+            interpolated to half the water column height instead. For
+            navigationally significant currents, a value of 4.5 is recommended.
     """
     if target_depth < 0:
         raise Exception('Target depth must be positive')
@@ -269,6 +271,8 @@ def vertical_interpolation(u, v, depth, num_x, num_y, time_index, target_depth):
                 continue
 
             # For areas shallower than the target depth, depth is half the total depth
+            # Note that interp_depth is a positive value because the 'depth' variable
+            # is positive-down.
             interp_depth = numpy.minimum(target_depth * 2, numpy.max(depth[deepest_valid_depth_layer_index])) / 2
 
             # Perform vertical linear interpolation on u/v values to target depth

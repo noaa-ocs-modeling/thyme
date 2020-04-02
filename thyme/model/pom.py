@@ -307,9 +307,11 @@ def vertical_interpolation(u, v, mask, zeta, depth, sigma, num_sigma, num_ny, nu
         num_ny: y dimensions.
         num_nx: x dimensions
         time_index: Single forecast time index value.
-        target_depth: The water current at a specified target depth below the sea
-            surface in meters, default target depth is 4.5 meters, target interpolation
-            depth must be greater or equal to 0.
+        target_depth: The target depth-below-sea-surface to which water
+            currents will be interpolated, in meters. Must be zero or greater.
+            For areas shallower than double this value, values will be
+            interpolated to half the water column height instead. For
+            navigationally significant currents, a value of 4.5 is recommended.
     """
     true_depth = zeta[time_index, :] + depth
 
@@ -320,11 +322,13 @@ def vertical_interpolation(u, v, mask, zeta, depth, sigma, num_sigma, num_ny, nu
 
     if target_depth < 0:
         raise Exception('Target depth must be positive')
-    if target_depth > numpy.nanmax(true_depth):
-        raise Exception('Target depth exceeds total depth')
 
+    # Convert target depth-below-surface to negative value, since sigma is
+    # negative (0 =~ surface, -1 =~ seafloor) [even if sigma values are stored
+    # in the NetCDF as positive-down, the values are converted to negative
+    # automatically in init_handles()]
     # For areas shallower than the target depth, depth is half the total depth
-    interp_depth = zeta[time_index, :] - numpy.minimum(target_depth * 2, true_depth) / 2
+    interp_depth = -1 * numpy.minimum(target_depth * 2, true_depth) / 2
 
     u_target_depth = numpy.ma.empty(shape=[num_ny, num_nx])
     v_target_depth = numpy.ma.empty(shape=[num_ny, num_nx])
