@@ -109,7 +109,6 @@ def vertical_values():
             [1, 1, 1],
             [1, 1, 1],
             [1, 1, 1]
-
         ])
 
     zeta = numpy.array(
@@ -124,7 +123,6 @@ def vertical_values():
             [2, 3.527, 4.8061],
             [4.2, 4.5, 0.2],
             [5.5952, 12.5469, 7.042]
-
         ])
 
     sigma = numpy.array(
@@ -134,53 +132,43 @@ def vertical_values():
 
     expected_u_target_depth_default = numpy.array(
         [
-            [-0.17926377, -0.18554955, -0.18801516],
-            [-0.15538332, -0.15856895, -0.21234017],
-            [-0.0840008, -0.09731044, -0.09873164]
-
+            [-0.14429612, -0.15575929, -0.16399005],
+            [-0.1333293, -0.13850904, -0.14700627],
+            [-0.08938728, -0.10011885, -0.10417534]
         ])
-
     expected_v_target_depth_default = numpy.array(
         [
-
-            [-0.01864845, -0.01659594, -0.01646639],
-            [-0.01534619, -0.00616173, -0.00150738],
-            [-0.00262452, -0.00232966, 0.006196]
-
+            [-0.01596288, -0.01442109, -0.01512187],
+            [-0.01361414, -0.00565303, -0.00299214],
+            [-0.00278781, -0.00238081,  0.00657039]
         ])
 
     expected_u_target_depth_surface = numpy.array(
         [
-            [-0.10377322, -0.09334997, -0.09087326],
-            [-0.07651691, -0.0822607, -0.18504499],
-            [-0.03825471, -0.05666347, -0.03977075]
-
+            [-0.06189488, -0.06355971, -0.06684815],
+            [-0.0544629, -0.06220079, -0.06111266],
+            [-0.04364119, -0.05947188, -0.04521446]
         ])
 
     expected_v_target_depth_surface = numpy.array(
-        [
-
-            [-0.01268602, -0.00986487, -0.01103001],
-            [-0.00915229, -0.00422664, -0.00272543],
-            [-0.00123775, -0.00158945, 0.00214102]
-
-        ])
+         [
+             [-0.00929955, -0.00769001, -0.00968549],
+             [-0.00742024, -0.00371795, -0.00320281],
+             [-0.00140104, -0.00164059,  0.00251541]
+         ])
 
     expected_u_target_depth_deep = numpy.array(
         [
-            [-0.10377322, -0.09334997, -0.09087326],
-            [-0.07651691, -0.0822607, -0.18504499],
-            [-0.03825471, -0.0420487, -0.03977075]
-
+            [-0.06189488, -0.06355971, -0.06684815],
+            [-0.0544629, -0.06220079, -0.06111266],
+            [-0.04364119, -0.04485711, -0.04521446]
         ])
 
     expected_v_target_depth_deep = numpy.array(
         [
-
-            [-0.01268602, -0.00986487, -0.01103001],
-            [-0.00915229, -0.00422664, -0.00272543],
-            [-0.00123775, -0.0013233, 0.00214102]
-
+            [-0.00929955, -0.00769001, -0.00968549],
+            [-0.00742024, -0.00371795, -0.00320281],
+            [-0.00140104, -0.00137444,  0.00251541]
         ])
 
     return VerticalValues(u, v, mask, zeta, depth, sigma, num_sigma, num_ny, num_nx, time_index, target_depth_default,
@@ -198,8 +186,8 @@ def test_vertical_interpolation(vertical_values):
                                                             vertical_values.time_index,
                                                             vertical_values.target_depth_default)
 
-    print(f"u_target_depth_default: {u_target_depth}")
-    print(f"v_target_depth_default: {v_target_depth}")
+    # print(f"u_target_depth_default: {u_target_depth}")
+    # print(f"v_target_depth_default: {v_target_depth}")
     assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_default)
     assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_default)
 
@@ -213,8 +201,8 @@ def test_vertical_interpolation_at_surface(vertical_values):
                                                             vertical_values.time_index,
                                                             vertical_values.target_depth_surface)
 
-    print(f"u_target_depth_surface: {u_target_depth}")
-    print(f"v_target_depth_surface: {v_target_depth}")
+    # print(f"u_target_depth_surface: {u_target_depth}")
+    # print(f"v_target_depth_surface: {v_target_depth}")
     assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_surface)
     assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_surface)
 
@@ -228,7 +216,7 @@ def test_vertical_interpolation_deep(vertical_values):
                                                             vertical_values.time_index,
                                                             vertical_values.target_depth_deep)
 
-    print(f"u_target_depth_deeep: {u_target_depth}")
-    print(f"v_target_depth_deep: {v_target_depth}")
+    # print(f"u_target_depth_deep: {u_target_depth}")
+    # print(f"v_target_depth_deep: {v_target_depth}")
     assert numpy.allclose(u_target_depth, vertical_values.expected_u_target_depth_deep)
     assert numpy.allclose(v_target_depth, vertical_values.expected_v_target_depth_deep)
