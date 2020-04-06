@@ -432,49 +432,12 @@ class ModelIndexFile:
 
         Returns:
             2D numpy array, matching the dimensions of the given RegularGrid,
-            containing a value of 0 for water areas and a value of 255 for land
+            containing a value of 0 for water areas and a value of 2 for land
             areas.
         """
-        shp = ogr.Open(shoreline_shp)
+        driver = ogr.GetDriverByName("ESRI Shapefile")
+        shp = driver.Open(shoreline_shp)
         layer = shp.GetLayer()
-
-        # Create OGR Geometry from ocean model grid extent
-        ring = ogr.Geometry(ogr.wkbLinearRing)
-        ring.AddPoint(reg_grid.x_min, reg_grid.y_max)
-        ring.AddPoint(reg_grid.x_min, reg_grid.y_min)
-        ring.AddPoint(reg_grid.x_max, reg_grid.y_min)
-        ring.AddPoint(reg_grid.x_max, reg_grid.y_max)
-        ring.AddPoint(reg_grid.x_min, reg_grid.y_max)
-        # Create polygon
-        ofs_poly = ogr.Geometry(ogr.wkbPolygon)
-        ofs_poly.AddGeometry(ring)
-
-        # Get the EPSG value from the import shapefile and transform to WGS84
-        spatial_ref = layer.GetSpatialRef()
-        shp_srs = spatial_ref.GetAttrValue('AUTHORITY', 1)
-        source = osr.SpatialReference()
-        source.ImportFromEPSG(int(shp_srs))
-        target = osr.SpatialReference()
-        target.ImportFromEPSG(4326)
-        transform = osr.CoordinateTransformation(source, target)
-        ofs_poly.Transform(transform)
-
-        # Find the intersection between shoreline shapefile and ocean
-        # model grid extent
-        for feature in layer:
-            geom = feature.GetGeometryRef()
-            intersection = ofs_poly.Intersection(geom)
-
-        # Create a regional ogr shoreline polygon layer
-        # write to memory
-        driver = ogr.GetDriverByName('Memory')
-        mem_dset = driver.CreateDataSource('mem_dst')
-        dest_srs = ogr.osr.SpatialReference()
-        dest_srs.ImportFromEPSG(4326)
-        lyr = mem_dset.CreateLayer('land_mask', dest_srs, geom_type=ogr.wkbPolygon)
-        feat = ogr.Feature(lyr.GetLayerDefn())
-        feat.SetGeometry(intersection)
-        lyr.CreateFeature(feat)
 
         # Rasterize the shoreline polygon layer and write to memory
         # Optionally write to gdal.GetDriverByName('GTIFF') for output a GeoTIFF
@@ -491,11 +454,12 @@ class ModelIndexFile:
         band.SetNoDataValue(FILLVALUE)
         band.FlushCache()
 
-        gdal.RasterizeLayer(target_dset, [1], lyr, burn_values=[2])
+        gdal.RasterizeLayer(target_dset, [1], layer, burn_values=[2])
 
-        # Store as a numpy array, land = 2, invalid areas = 0
+        # Store as a numpy array, land = 2, valid areas = 0
         target_band = target_dset.GetRasterBand(1)
         land_mask = target_band.ReadAsArray(pixel_width, pixel_height, rows, cols).astype(numpy.int)
+        del target_dset
 
         return land_mask
 
@@ -572,8 +536,8 @@ class ModelIndexFile:
                 containing regular grid model domain mask values, a value of 1
                 for valid water, a value of 0 for invalid areas.
             land_mask: 2D numpy array, matching the index file dimensions,
-                containing regular grid masked values, a value of 0 for invalid
-                areas and a value of 2 for land.
+                containing regular grid masked values, a value of 0 for water
+                and a value of 2 for land.
         """
         # Use land mask and grid cell mask to create a master mask
         # Value of 1 for valid areas, FILLVALUE for invalid areas
