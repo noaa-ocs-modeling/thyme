@@ -561,16 +561,18 @@ class ModelFile:
     Opens a NetCDF model file, reads variables, gets model domain extent,
     converts values, and interpolates model variables to a regular grid.
     """
-    def __init__(self, path, datetime_rounding=None):
-        """Initialize model file object and opens file at specified path.
+    def __init__(self, path, file_object=None, datetime_rounding=None):
+        """Initialize and open model file object at specified path.
 
         Args:
             path: Path of target NetCDF file.
+            file_object: Memory or disk based NetCDF file object
             datetime_rounding: The `dateutil.DatetimeRounding` constant
                 representing how date/time values should be rounded, or None if
                 no rounding should occur.
         """
         self.path = path
+        self.file_object = file_object
         self.datetime_rounding = datetime_rounding
         self.datetime_values = None
         self.nc_file = None
@@ -582,7 +584,10 @@ class ModelFile:
             Exception: If specified NetCDF file does not exist.
         """
         if os.path.exists(self.path):
-            self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF3_CLASSIC')
+            if self.file_object:
+                self.nc_file = netCDF4.Dataset(self.path, 'r', memory=self.file_object)
+            else:
+                self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF3_CLASSIC')
             self.init_handles()
         else:
             # File doesn't exist, raise error

@@ -102,16 +102,17 @@ class RectilinearFile(model.ModelFile):
         path: Path (relative or absolute) of the file.
     """
 
-    def __init__(self, path, datetime_rounding=None):
+    def __init__(self, path, file_object=None, datetime_rounding=None):
         """Initialize rectilinear file object and open file at specified path.
 
         Args:
             path: Path of target NetCDF file.
+            file_object: Memory or disk based NetCDF file object
             datetime_rounding: The `dateutil.DatetimeRounding` constant
                 representing how date/time values should be rounded, or None if
                 no rounding should occur.
         """
-        super().__init__(path, datetime_rounding=datetime_rounding)
+        super().__init__(path, file_object=file_object, datetime_rounding=datetime_rounding)
         self.var_lat = None
         self.var_lon = None
         self.var_u = None

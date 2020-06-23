@@ -158,16 +158,17 @@ class FVCOMFile(model.ModelFile):
         path: Path (relative or absolute) of the file.
         lon_offset: Offset value to be added to longitude coordinates.
     """
-    def __init__(self, path, lon_offset=-360, datetime_rounding=None):
-        """Initialize FVCOM file object and open file at specified path.
+    def __init__(self, path, file_object=None, lon_offset=-360, datetime_rounding=None):
+        """Initialize and open FVCOM file object and at specified path.
 
         Args:
             path: Path of target NetCDF file.
+            file_object: Memory or disk based NetCDF file object
             datetime_rounding: The `dateutil.DatetimeRounding` constant
                 representing how date/time values should be rounded, or None if
                 no rounding should occur.
         """
-        super().__init__(path, datetime_rounding=datetime_rounding)
+        super().__init__(path, file_object=file_object, datetime_rounding=datetime_rounding)
         self.lon_offset = lon_offset
         self.var_lat_nodal = None
         self.var_lon_nodal = None
