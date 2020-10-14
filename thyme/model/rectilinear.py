@@ -181,8 +181,8 @@ class RectilinearFile(model.ModelFile):
     def get_vertical_coordinate_type(self):
         pass
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
-        """Call grid processing functions and interpolate u/v to a regular grid"""
+    def output_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
+        """Call grid processing functions and interpolate target variable(s) to a regular grid"""
 
         u_single = self.var_u[time_index, 0, :, :]
         v_single = self.var_v[time_index, 0, :, :]

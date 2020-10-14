@@ -586,6 +586,8 @@ class ModelFile:
         if os.path.exists(self.path):
             if self.file_object:
                 self.nc_file = netCDF4.Dataset(self.path, 'r', memory=self.file_object)
+            elif 'estofs' in self.path:
+                self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF4_CLASSIC')
             else:
                 self.nc_file = netCDF4.Dataset(self.path, 'r', format='NETCDF3_CLASSIC')
             self.init_handles()
@@ -621,13 +623,13 @@ class ModelFile:
         for i in range(len(datetimes)):
             self.datetime_values.append(dateutil.round(datetimes[i], self.datetime_rounding))
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=None):
-        """Interpolate u/v current velocity components to regular grid.
+    def output_regular_grid(self, model_index, time_index, target_depth, interp_method=None):
+        """Interpolate variables to regular grid.
         
         This function should be overridden, as its implementation is very
         specific to the characteristics of the native model output.
         """
-        raise NotImplementedError("model.uv_to_regular_grid() must be overridden by subclass")
+        raise NotImplementedError("model.output_regular_grid() must be overridden by subclass")
 
     def output_native_grid(self, time_index, target_depth):
         """Generate output using native grid coordinates

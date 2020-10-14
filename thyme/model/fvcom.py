@@ -290,8 +290,8 @@ class FVCOMFile(model.ModelFile):
 
         return siglay_centroid, self.var_lat_centroid, self.var_lon_centroid, self.num_nele, self.num_siglay
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
-        """Call grid processing functions and interpolate u/v to a regular grid"""
+    def output_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
+        """Call grid processing functions and interpolate target variable(s) to a regular grid"""
 
         h_centroid, zeta_centroid = node_to_centroid(self.var_zeta, self.var_h, self.var_lon_nodal, self.var_lat_nodal,
                                                      self.var_lon_centroid, self.var_lat_centroid, time_index)

@@ -254,8 +254,8 @@ class POMFile(model.ModelFile):
     def get_vertical_coordinate_type(self):
         pass
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
-        """Call grid processing functions and interpolate u/v to a regular grid"""
+    def output_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
+        """Call grid processing functions and interpolate target variable(s) to a regular grid"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_mask, self.var_zeta, self.var_depth, self.var_sigma, self.num_sigma, self.num_ny, self.num_nx, time_index, target_depth)
 

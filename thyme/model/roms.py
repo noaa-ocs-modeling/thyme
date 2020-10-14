@@ -66,8 +66,8 @@ class ROMSIndexFile(model.ModelIndexFile):
                 which the mask will be created.
         """
         # Create OGR layer in memory
-        driver = ogr.GetDriverByName('Memory')
-        dset = driver.CreateDataSource('grid_cell_mask')
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+        dset = driver.CreateDataSource('grid_cell_mask.shp')
         dset_srs = osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
@@ -224,7 +224,7 @@ class ROMSFile(model.ModelFile):
     def get_vertical_coordinate_type(self):
         pass
 
-    def uv_to_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
+    def output_regular_grid(self, model_index, time_index, target_depth, interp_method=interp.INTERP_METHOD_SCIPY):
         """Call grid processing functions and interpolate averaged, rotated u/v to a regular grid"""
 
         u_target_depth, v_target_depth = vertical_interpolation(self.var_u, self.var_v, self.var_s_rho,
