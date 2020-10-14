@@ -66,8 +66,8 @@ class ROMSIndexFile(model.ModelIndexFile):
                 which the mask will be created.
         """
         # Create OGR layer in memory
-        driver = ogr.GetDriverByName('ESRI Shapefile')
-        dset = driver.CreateDataSource('grid_cell_mask.shp')
+        driver = ogr.GetDriverByName('Memory')
+        dset = driver.CreateDataSource('grid_cell_mask')
         dset_srs = osr.SpatialReference()
         dset_srs.ImportFromEPSG(4326)
         layer = dset.CreateLayer('', dset_srs, ogr.wkbMultiPolygon)
